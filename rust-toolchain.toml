@@ -4,10 +4,10 @@ components = [
 	"cargo",
 	"clippy",
 	"rust-analyzer",
+	"rust-docs",
 	"rust-src",
 	"rust-std",
 	"rustc",
-	# "rustc-dev",
 	"rustfmt",
 ]
 targets = ["wasm32-unknown-unknown", "wasm32v1-none"]

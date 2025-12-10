@@ -1,4 +1,4 @@
-FROM docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202511141243 as builder
+FROM docker.io/paritytech/ci-unified:bullseye-1.88.0-2025-06-27-v202511141243 AS builder
 
 WORKDIR /polkadot
 COPY . /polkadot

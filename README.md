@@ -3,8 +3,7 @@
 A fresh [Substrate](https://substrate.io/) node, ready for hacking :rocket:
 
 This standalone template was generated from polkadot-sdk
-release branch from the [Solochain Template in
-Substrate](https://github.com/paritytech/polkadot-sdk/tree/master/templates/solochain)
+release branch from the [Solochain Template in Substrate](https://github.com/paritytech/polkadot-sdk/tree/master/templates/solochain)
 upstream
 
 It is usually best to use the stand-alone version to start a new project. All
@@ -17,8 +16,7 @@ repository.
 Depending on your operating system and Rust version, there might be additional
 packages required to compile this template. Check the
 [Install](https://docs.substrate.io/install/) instructions for your platform for
-the most common dependencies. Alternatively, you can use one of the [alternative
-installation](#alternatives-installations) options.
+the most common dependencies. Alternatively, you can use one of the [alternative installation](#alternatives-installations) options.
 
 Fetch solochain template code:
 
@@ -44,8 +42,7 @@ parameters and subcommands:
 ./target/release/solochain-template-node -h
 ```
 
-You can generate and view the [Rust
-Docs](https://doc.rust-lang.org/cargo/commands/cargo-doc.html) for this template
+You can generate and view the [Rust Docs](https://doc.rust-lang.org/cargo/commands/cargo-doc.html) for this template
 with this command:
 
 ```sh
@@ -81,7 +78,6 @@ Development chains:
 - Are preconfigured with a genesis state (`/node/src/chain_spec.rs`) that
   includes several pre-funded development accounts.
 
-
 To persist chain state between runs, specify a base path by running a command
 similar to the following:
 
@@ -104,8 +100,7 @@ db keystore network
 ### Connect with Polkadot-JS Apps Front-End
 
 After you start the node template locally, you can interact with it using the
-hosted version of the [Polkadot/Substrate
-Portal](https://polkadot.js.org/apps/#/explorer?rpc=ws://localhost:9944)
+hosted version of the [Polkadot/Substrate Portal](https://polkadot.js.org/apps/#/explorer?rpc=ws://localhost:9944)
 front-end by connecting to the local node endpoint. A hosted version is also
 available on [IPFS](https://dotapps.io/). You can
 also find the source code and instructions for hosting your own instance in the
@@ -113,8 +108,7 @@ also find the source code and instructions for hosting your own instance in the
 
 ### Multi-Node Local Testnet
 
-If you want to see the multi-node consensus algorithm in action, see [Simulate a
-network](https://docs.substrate.io/tutorials/build-a-blockchain/simulate-network/).
+If you want to see the multi-node consensus algorithm in action, see [Simulate a network](https://docs.substrate.io/tutorials/build-a-blockchain/simulate-network/).
 
 ## Template Structure
 
@@ -133,33 +127,27 @@ capabilities:
   [consensus](https://docs.substrate.io/fundamentals/consensus/) on the state of
   the network. Substrate makes it possible to supply custom consensus engines
   and also ships with several consensus mechanisms that have been built on top
-  of [Web3 Foundation
-  research](https://research.web3.foundation/Polkadot/protocols/NPoS).
+  of [Web3 Foundation research](https://research.web3.foundation/Polkadot/protocols/NPoS).
 - RPC Server: A remote procedure call (RPC) server is used to interact with
   Substrate nodes.
 
 There are several files in the `node` directory. Take special note of the
 following:
 
-- [`chain_spec.rs`](./node/src/chain_spec.rs): A [chain
-  specification](https://docs.substrate.io/build/chain-spec/) is a source code
+- [`chain_spec.rs`](./node/src/chain_spec.rs): A [chain specification](https://docs.substrate.io/build/chain-spec/) is a source code
   file that defines a Substrate chain's initial (genesis) state. Chain
   specifications are useful for development and testing, and critical when
   architecting the launch of a production chain. Take note of the
   `development_config` and `testnet_genesis` functions. These functions are
   used to define the genesis state for the local development chain
-  configuration. These functions identify some [well-known
-  accounts](https://docs.substrate.io/reference/command-line-tools/subkey/) and
+  configuration. These functions identify some [well-known accounts](https://docs.substrate.io/reference/command-line-tools/subkey/) and
   use them to configure the blockchain's initial state.
 - [`service.rs`](./node/src/service.rs): This file defines the node
   implementation. Take note of the libraries that this file imports and the
   names of the functions it invokes. In particular, there are references to
-  consensus-related topics, such as the [block finalization and
-  forks](https://docs.substrate.io/fundamentals/consensus/#finalization-and-forks)
-  and other [consensus
-  mechanisms](https://docs.substrate.io/fundamentals/consensus/#default-consensus-models)
+  consensus-related topics, such as the [block finalization and forks](https://docs.substrate.io/fundamentals/consensus/#finalization-and-forks)
+  and other [consensus mechanisms](https://docs.substrate.io/fundamentals/consensus/#default-consensus-models)
   such as Aura for block authoring and GRANDPA for finality.
-
 
 ### Runtime
 
@@ -169,8 +157,7 @@ validating blocks and executing the state changes they define. The Substrate
 project in this repository uses
 [FRAME](https://docs.substrate.io/learn/runtime-development/#frame) to construct
 a blockchain runtime. FRAME allows runtime developers to declare domain-specific
-logic in modules called "pallets". At the heart of FRAME is a helpful [macro
-language](https://docs.substrate.io/reference/frame-macros/) that makes it easy
+logic in modules called "pallets". At the heart of FRAME is a helpful [macro language](https://docs.substrate.io/reference/frame-macros/) that makes it easy
 to create pallets and flexibly compose them to create blockchains that can
 address [a variety of needs](https://substrate.io/ecosystem/projects/).
 
@@ -182,21 +169,17 @@ template and note the following:
   $PALLET_NAME::Config for Runtime`.
 - The pallets are composed into a single runtime by way of the
   [#[runtime]](https://paritytech.github.io/polkadot-sdk/master/frame_support/attr.runtime.html)
-  macro, which is part of the [core FRAME pallet
-  library](https://docs.substrate.io/reference/frame-pallets/#system-pallets).
+  macro, which is part of the [core FRAME pallet library](https://docs.substrate.io/reference/frame-pallets/#system-pallets).
 
 ### Pallets
 
 The runtime in this project is constructed using many FRAME pallets that ship
-with [the Substrate
-repository](https://github.com/paritytech/polkadot-sdk/tree/master/substrate/frame) and a
-template pallet that is [defined in the
-`pallets`](./pallets/template/src/lib.rs) directory.
+with [the Substrate repository](https://github.com/paritytech/polkadot-sdk/tree/master/substrate/frame) and a
+template pallet that is [defined in the `pallets`](./pallets/template/src/lib.rs) directory.
 
 A FRAME pallet is comprised of a number of blockchain primitives, including:
 
-- Storage: FRAME defines a rich set of powerful [storage
-  abstractions](https://docs.substrate.io/build/runtime-storage/) that makes it
+- Storage: FRAME defines a rich set of powerful [storage abstractions](https://docs.substrate.io/build/runtime-storage/) that makes it
   easy to use Substrate's efficient key-value database to manage the evolving
   state of a blockchain.
 - Dispatchables: FRAME pallets define special types of functions that can be
@@ -223,6 +206,5 @@ the correct dependencies, activate direnv `direnv allow`.
 
 ### Docker
 
-Please follow the [Substrate Docker instructions
-here](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/docker/README.md) to
+Please follow the [Substrate Docker instructions here](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/docker/README.md) to
 build the Docker container with the Substrate Node Template binary.

@@ -10,8 +10,7 @@ the same for all supported, Unix-based operating systems.
 
 ## Build dependencies
 
-Substrate development is easiest on Unix-based operating systems like macOS or Linux. The examples in the [Substrate
-Docs](https://docs.substrate.io) use Unix-style terminals to demonstrate how to interact with Substrate from the command
+Substrate development is easiest on Unix-based operating systems like macOS or Linux. The examples in the [Substrate Docs](https://docs.substrate.io) use Unix-style terminals to demonstrate how to interact with Substrate from the command
 line.
 
 ### Ubuntu/Debian
@@ -141,8 +140,7 @@ rustc 1.50.0 (cb75ad5db 2021-02-10)
 
 As you can see above, the default toolchain is stable, and the `nightly-x86_64-unknown-linux-gnu` toolchain as well as
 its `wasm32-unknown-unknown` target is installed. You also see that `nightly-2020-10-06-x86_64-unknown-linux-gnu` is
-installed, but is not used unless explicitly defined as illustrated in the [specify your nightly
-version](#specifying-nightly-version) section.
+installed, but is not used unless explicitly defined as illustrated in the [specify your nightly version](#specifying-nightly-version) section.
 
 ### WebAssembly compilation
 
@@ -178,8 +176,7 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 If you want to guarantee that your build works on your computer as you update Rust and other dependencies, you should
 use a specific Rust nightly version that is known to be compatible with the version of Substrate they are using; this
 version will vary from project to project and different projects may use different mechanisms to communicate this
-version to developers. For instance, the Polkadot client specifies this information in its [release
-notes](https://github.com/paritytech/polkadot-sdk/releases).
+version to developers. For instance, the Polkadot client specifies this information in its [release notes](https://github.com/paritytech/polkadot-sdk/releases).
 
 ```bash
 # Specify the specific nightly toolchain in the date below:

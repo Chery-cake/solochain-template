@@ -1,0 +1,30 @@
+{
+  "toml": {
+    "useTabs": true,
+    "newLineKind": "lf",
+    "comment.forceLeadingSpace": true,
+    "cargo.applyConventions": true
+  },
+  "includes": [
+    "**/Dockerfile",
+    "**/*.{md}",
+    "**/*.{json}",
+    "**/*.{toml}"
+  ],
+  "excludes": [
+    "**/__pycache__/",
+    "**/.criterion/",
+    "**/hfuzz_target/",
+    "**/hfuzz_workspace/",
+    "**/node_modules",
+    "**/target/",
+    "**/._*",
+    "Cargo.lock"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/dockerfile-0.3.3.wasm",
+    "https://plugins.dprint.dev/markdown-0.20.0.wasm",
+    "https://plugins.dprint.dev/json-0.21.0.wasm",
+    "https://plugins.dprint.dev/toml-0.7.0.wasm"
+  ]
+}

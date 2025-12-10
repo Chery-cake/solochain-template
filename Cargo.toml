@@ -1,15 +1,15 @@
 [workspace.package]
-license = "MIT-0"
 authors = ["Parity Technologies <admin@parity.io>"]
-homepage = "https://paritytech.github.io/polkadot-sdk/"
-repository = "https://github.com/paritytech/polkadot-sdk-solochain-template.git"
 edition = "2021"
+homepage = "https://paritytech.github.io/polkadot-sdk/"
+license = "MIT-0"
+repository = "https://github.com/paritytech/polkadot-sdk-solochain-template.git"
 
 [workspace]
 members = [
-    "node",
-    "pallets/template",
-    "runtime",
+	"node",
+	"pallets/template",
+	"runtime",
 ]
 resolver = "2"
 
@@ -27,18 +27,18 @@ jsonrpsee = { version = "0.24.10" }
 scale-info = { version = "2.11.6", default-features = false }
 serde_json = { version = "1.0.132", default-features = false }
 
-# frame 
-frame-system = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
-frame-benchmarking-cli = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
-frame-metadata-hash-extension = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
+# frame
 frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
+frame-benchmarking-cli = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 frame-executive = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
+frame-metadata-hash-extension = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 frame-support = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
+frame-system = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 frame-system-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 frame-try-runtime = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 
-# frame pallets 
+# frame pallets
 pallet-aura = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 pallet-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
@@ -68,62 +68,55 @@ sp-api = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a
 sp-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
+sp-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-genesis-builder = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-io = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-keyring = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
-sp-timestamp = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
-sp-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-offchain = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-session = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-storage = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
+sp-timestamp = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-transaction-pool = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 sp-version = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 
 # substrate utils
-substrate-frame-rpc-system = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 substrate-build-script-utils = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
+substrate-frame-rpc-system = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 substrate-wasm-builder = { git = "https://github.com/paritytech/polkadot-sdk", rev = "dd54f6596a913ecc64ccbf7458d48e1f7dbe2d76", default-features = false }
 
 [workspace.lints.rust]
 suspicious_double_ref_op = { level = "allow", priority = 2 }
 # `substrate_runtime` is a common `cfg` condition name used in the repo.
-unexpected_cfgs = { level = "warn", check-cfg = [
-	'cfg(build_opt_level, values("3"))',
-	'cfg(build_profile, values("debug", "release"))',
-	'cfg(enable_alloc_error_handler)',
-	'cfg(fuzzing)',
-	'cfg(ignore_flaky_test)',
-	'cfg(substrate_runtime)',
-] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(build_opt_level, values("3"))', 'cfg(build_profile, values("debug", "release"))', 'cfg(enable_alloc_error_handler)', 'cfg(fuzzing)', 'cfg(ignore_flaky_test)', 'cfg(substrate_runtime)'] }
 
 [workspace.lints.clippy]
 all = { level = "allow", priority = 0 }
-bind_instead_of_map = { level = "allow", priority = 2 }              # stylistic
-borrowed-box = { level = "allow", priority = 2 }                     # Reasonable to fix this one
+bind_instead_of_map = { level = "allow", priority = 2 } # stylistic
+borrowed-box = { level = "allow", priority = 2 } # Reasonable to fix this one
 complexity = { level = "warn", priority = 1 }
 correctness = { level = "warn", priority = 1 }
 default_constructed_unit_structs = { level = "allow", priority = 2 } # stylistic
-derivable_impls = { level = "allow", priority = 2 }                  # false positives
-eq_op = { level = "allow", priority = 2 }                            # In tests we test equality.
-erasing_op = { level = "allow", priority = 2 }                       # E.g. 0 * DOLLARS
-extra-unused-type-parameters = { level = "allow", priority = 2 }     # stylistic
-identity-op = { level = "allow", priority = 2 }                      # One case where we do 0 +
+derivable_impls = { level = "allow", priority = 2 } # false positives
+eq_op = { level = "allow", priority = 2 } # In tests we test equality.
+erasing_op = { level = "allow", priority = 2 } # E.g. 0 * DOLLARS
+extra-unused-type-parameters = { level = "allow", priority = 2 } # stylistic
+identity-op = { level = "allow", priority = 2 } # One case where we do 0 +
 if-same-then-else = { level = "allow", priority = 2 }
-needless-lifetimes = { level = "allow", priority = 2 }               # generated code
-needless_option_as_deref = { level = "allow", priority = 2 }         # false positives
-nonminimal-bool = { level = "allow", priority = 2 }                  # maybe
-option-map-unit-fn = { level = "allow", priority = 2 }               # stylistic
-stable_sort_primitive = { level = "allow", priority = 2 }            # prefer stable sort
-too-many-arguments = { level = "allow", priority = 2 }               # (Turning this on would lead to)
-type_complexity = { level = "allow", priority = 2 }                  # raison d'etre
-unit_arg = { level = "allow", priority = 2 }                         # stylistic
-unnecessary_cast = { level = "allow", priority = 2 }                 # Types may change
-useless_conversion = { level = "allow", priority = 2 }               # Types may change
-while_immutable_condition = { level = "allow", priority = 2 }        # false positives
-zero-prefixed-literal = { level = "allow", priority = 2 }            # 00_1000_000
+needless-lifetimes = { level = "allow", priority = 2 } # generated code
+needless_option_as_deref = { level = "allow", priority = 2 } # false positives
+nonminimal-bool = { level = "allow", priority = 2 } # maybe
+option-map-unit-fn = { level = "allow", priority = 2 } # stylistic
+stable_sort_primitive = { level = "allow", priority = 2 } # prefer stable sort
+too-many-arguments = { level = "allow", priority = 2 } # (Turning this on would lead to)
+type_complexity = { level = "allow", priority = 2 } # raison d'etre
+unit_arg = { level = "allow", priority = 2 } # stylistic
+unnecessary_cast = { level = "allow", priority = 2 } # Types may change
+useless_conversion = { level = "allow", priority = 2 } # Types may change
+while_immutable_condition = { level = "allow", priority = 2 } # false positives
+zero-prefixed-literal = { level = "allow", priority = 2 } # 00_1000_000
 
 ############
 # profiles #
@@ -144,4 +137,53 @@ inherits = "release"
 [profile.production]
 codegen-units = 1
 inherits = "release"
-lto = true
+lto = "fat"
+debug = false
+overflow-checks = false
+debug-assertions = false
+incremental = false
+
+[profile.dev.package]
+ark-vrf = { opt-level = 3 }
+blake2 = { opt-level = 3 }
+blake2b_simd = { opt-level = 3 }
+chacha20poly1305 = { opt-level = 3 }
+cranelift-codegen = { opt-level = 3 }
+crc32fast = { opt-level = 3 }
+crossbeam-deque = { opt-level = 3 }
+crypto-mac = { opt-level = 3 }
+curve25519-dalek = { opt-level = 3 }
+ed25519-dalek = { opt-level = 3 }
+futures-channel = { opt-level = 3 }
+hash-db = { opt-level = 3 }
+hashbrown = { opt-level = 3 }
+hmac = { opt-level = 3 }
+httparse = { opt-level = 3 }
+integer-sqrt = { opt-level = 3 }
+keccak = { opt-level = 3 }
+libm = { opt-level = 3 }
+librocksdb-sys = { opt-level = 3 }
+libsecp256k1 = { opt-level = 3 }
+libz-sys = { opt-level = 3 }
+mio = { opt-level = 3 }
+nalgebra = { opt-level = 3 }
+num-bigint = { opt-level = 3 }
+parking_lot = { opt-level = 3 }
+parking_lot_core = { opt-level = 3 }
+percent-encoding = { opt-level = 3 }
+polkavm-linker = { opt-level = 3 }
+primitive-types = { opt-level = 3 }
+reed-solomon-novelpoly = { opt-level = 3 }
+ring = { opt-level = 3 }
+rustls = { opt-level = 3 }
+sha2 = { opt-level = 3 }
+sha3 = { opt-level = 3 }
+smallvec = { opt-level = 3 }
+snow = { opt-level = 3 }
+substrate-bip39 = { opt-level = 3 }
+twox-hash = { opt-level = 3 }
+uint = { opt-level = 3 }
+wasmi = { opt-level = 3 }
+x25519-dalek = { opt-level = 3 }
+yamux = { opt-level = 3 }
+zeroize = { opt-level = 3 }
