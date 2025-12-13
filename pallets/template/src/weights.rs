@@ -8,22 +8,17 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// ../../target/release/node-template
+// ./target/release/solochain-template-node
 // benchmark
 // pallet
-// --chain
-// dev
-// --pallet
-// pallet_template
-// --extrinsic
-// *
+// --chain=dev
+// --pallet=pallet_template
+// --extrinsic=*
 // --steps=50
-// --repeat=20
+// --repeat=200
 // --wasm-execution=compiled
-// --output
-// pallets/template/src/weights.rs
-// --template
-// ../../.maintain/frame-weight-template.hbs
+// --output=pallets/template/src/weights.rs
+// --template=.maintain/frame-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
