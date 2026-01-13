@@ -52,7 +52,7 @@ impl_runtime_apis! {
 			VERSION
 		}
 
-		fn execute_block(block: <Block as BlockT>::LazyBlock) {
+		fn execute_block(block: Block) {
 			Executive::execute_block(block);
 		}
 
@@ -95,7 +95,7 @@ impl_runtime_apis! {
 		}
 
 		fn check_inherents(
-			block: <Block as BlockT>::LazyBlock,
+			block: Block,
 			data: sp_inherents::InherentData,
 		) -> sp_inherents::CheckInherentsResult {
 			data.check_extrinsics(&block)
@@ -277,7 +277,7 @@ impl_runtime_apis! {
 		}
 
 		fn execute_block(
-			block: <Block as BlockT>::LazyBlock,
+			block: Block,
 			state_root_check: bool,
 			signature_check: bool,
 			select: frame_try_runtime::TryStateSelect

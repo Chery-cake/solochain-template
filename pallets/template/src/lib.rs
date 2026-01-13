@@ -83,6 +83,10 @@ pub use weights::*;
 pub mod pallet {
 	use super::weights::{WeightInfo as TemplateWeightInfo, WeightInfoFor};
 
+	// Import various useful types required by all FRAME pallets.
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
+
 	// If you prefer to import types explicitly, uncomment the lines below
 	// use frame_support::{
 	// 	sp_runtime::{
@@ -96,10 +100,6 @@ pub mod pallet {
 	// 	ensure_signed,
 	// 	pallet_prelude::{AccountIdFor, OriginFor},
 	// };
-
-	// Import various useful types required by all FRAME pallets.
-	use frame_support::pallet_prelude::*;
-	use frame_system::pallet_prelude::*;
 
 	// The `Pallet` struct serves as a placeholder to implement traits, methods and dispatchables
 	// (`Call`s) in this pallet.
