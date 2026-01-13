@@ -54,17 +54,50 @@ mod tests;
 
 // Every callable function or "dispatchable" a pallet exposes must have weight values that correctly
 // estimate a dispatchable's execution time. The benchmarking module is used to calculate weights
-// for each dispatchable and generates this pallet's weight.rs file. Learn more about benchmarking here: https://docs.substrate.io/test/benchmark/
+// for each dispatchable and generates this pallet's weight.rs file.
+// Learn more about benchmarking here: https://docs.substrate.io/test/benchmark/
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-pub mod weights;
+
+// The file "weights.rs" is autogenered, we renamed it so we can define custom types
+// such as `WeightInfoFor` and still export the module named `weights`.
+//
+// See `scripts/benchmark.sh` for more details on how to run the benchmarks and
+// generate the "weights.rs" file.
+#[path = "weights.rs"]
+mod pallet_weights;
+
+// Export the trait `WeightInfo` and the default implementation `SubstrateWeight`
+pub mod weights {
+	use super::pallet::Config;
+	pub use super::pallet_weights::{SubstrateWeight, WeightInfo};
+	pub use frame_support::weights::Weight;
+
+	/// Type alias for the `WeightInfo` associated type of template config.
+	pub type WeightInfoFor<T> = <T as Config>::WeightInfo;
+}
 pub use weights::*;
 
 // All pallet logic is defined in its own module and must be annotated by the `pallet` attribute.
 #[frame_support::pallet]
 pub mod pallet {
+	use super::weights::{WeightInfo as TemplateWeightInfo, WeightInfoFor};
+
+	// If you prefer to import types explicitly, uncomment the lines below
+	// use frame_support::{
+	// 	sp_runtime::{
+	// 		sp_std::{convert::From, result::Result},
+	// 		DispatchResult,
+	// 	},
+	// 	storage::types::StorageValue,
+	// 	traits::IsType,
+	// };
+	// use frame_system::{
+	// 	ensure_signed,
+	// 	pallet_prelude::{AccountIdFor, OriginFor},
+	// };
+
 	// Import various useful types required by all FRAME pallets.
-	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 
@@ -84,7 +117,7 @@ pub mod pallet {
 		#[allow(deprecated)]
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// A type representing the weights required by the dispatchables of this pallet.
-		type WeightInfo: WeightInfo;
+		type WeightInfo: TemplateWeightInfo;
 	}
 
 	/// A storage item for this pallet.
@@ -92,7 +125,7 @@ pub mod pallet {
 	/// In this template, we are declaring a storage item called `Something` that stores a single
 	/// `u32` value. Learn more about runtime storage here: <https://docs.substrate.io/build/runtime-storage/>
 	#[pallet::storage]
-	pub type Something<T> = StorageValue<_, u32>;
+	pub type Something<T: Config> = StorageValue<_, u32>;
 
 	/// Events that functions in this pallet can emit.
 	///
@@ -112,7 +145,7 @@ pub mod pallet {
 			/// The new value set.
 			something: u32,
 			/// The account who set the new value.
-			who: T::AccountId,
+			who: AccountIdFor<T>,
 		},
 	}
 
@@ -152,7 +185,7 @@ pub mod pallet {
 		/// It checks that the _origin_ for this call is _Signed_ and returns a dispatch
 		/// error if it isn't. Learn more about origins here: <https://docs.substrate.io/build/origins/>
 		#[pallet::call_index(0)]
-		#[pallet::weight(T::WeightInfo::do_something())]
+		#[pallet::weight(<WeightInfoFor<T> as TemplateWeightInfo>::do_something())]
 		pub fn do_something(origin: OriginFor<T>, something: u32) -> DispatchResult {
 			// Check that the extrinsic was signed and get the signer.
 			let who = ensure_signed(origin)?;
@@ -181,7 +214,7 @@ pub mod pallet {
 		/// - If incrementing the value in storage causes an arithmetic overflow
 		///   ([`Error::StorageOverflow`])
 		#[pallet::call_index(1)]
-		#[pallet::weight(T::WeightInfo::cause_error())]
+		#[pallet::weight(<WeightInfoFor<T> as TemplateWeightInfo>::cause_error())]
 		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
 			let _who = ensure_signed(origin)?;
 
