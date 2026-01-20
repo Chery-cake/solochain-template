@@ -1,0 +1,88 @@
+//! Mock runtime for testing the travel-points pallet.
+//!
+//! This module sets up a minimal runtime environment for unit testing
+//! the travel points functionality.
+
+use crate as pallet_travel_points;
+use frame_support::derive_impl;
+use sp_runtime::BuildStorage;
+
+// Define the mock block type using the standard testing utilities
+type Block = frame_system::mocking::MockBlock<Test>;
+
+// Build the mock runtime with the necessary pallets
+#[frame_support::runtime]
+mod runtime {
+	// The main runtime struct
+	#[runtime::runtime]
+	// Generate all the necessary runtime types
+	#[runtime::derive(
+		RuntimeCall,
+		RuntimeEvent,
+		RuntimeError,
+		RuntimeOrigin,
+		RuntimeFreezeReason,
+		RuntimeHoldReason,
+		RuntimeSlashReason,
+		RuntimeLockId,
+		RuntimeTask,
+		RuntimeViewFunction
+	)]
+	pub struct Test;
+
+	// System pallet - required by all runtimes
+	#[runtime::pallet_index(0)]
+	pub type System = frame_system::Pallet<Test>;
+
+	// Our travel points pallet
+	#[runtime::pallet_index(1)]
+	pub type TravelPoints = pallet_travel_points::Pallet<Test>;
+}
+
+// Configure the system pallet for the test runtime
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
+impl frame_system::Config for Test {
+	type Block = Block;
+}
+
+// Configure our travel points pallet for testing
+impl pallet_travel_points::Config for Test {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = ();
+	// Allow up to 100 point batches per user in tests
+	type MaxPointBatches = frame_support::traits::ConstU32<100>;
+	// Default expiration: 1000 blocks (about 100 minutes with 6 second blocks)
+	type DefaultExpirationPeriod = frame_support::traits::ConstU64<1000>;
+}
+
+// Helper function to build the genesis storage for tests
+pub fn new_test_ext() -> sp_io::TestExternalities {
+	let mut storage = frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
+		.unwrap();
+
+	// Configure the travel points pallet with an admin
+	pallet_travel_points::GenesisConfig::<Test> {
+		admin: Some(1), // Account 1 is the admin
+		authorized_issuers: vec![2], // Account 2 is pre-authorized to issue points
+	}
+	.assimilate_storage(&mut storage)
+	.unwrap();
+
+	storage.into()
+}
+
+// Helper function to build test storage without any pre-configured admin
+pub fn new_test_ext_no_admin() -> sp_io::TestExternalities {
+	frame_system::GenesisConfig::<Test>::default()
+		.build_storage()
+		.unwrap()
+		.into()
+}
+
+// Helper function to advance the block number for testing expiration
+pub fn run_to_block(n: u64) {
+	while System::block_number() < n {
+		System::set_block_number(System::block_number() + 1);
+	}
+}
