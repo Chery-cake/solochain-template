@@ -52,6 +52,8 @@ impl pallet_travel_points::Config for Test {
 	// Allow up to 100 point batches per user in tests
 	type MaxPointBatches = frame_support::traits::ConstU32<100>;
 	// Default expiration: 1000 blocks (about 100 minutes with 6 second blocks)
+	// Note: Uses ConstU64 because TestDefaultConfig uses u64 for BlockNumber,
+	// while the real runtime uses ConstU32 (runtime BlockNumber is u32)
 	type DefaultExpirationPeriod = frame_support::traits::ConstU64<1000>;
 }
 

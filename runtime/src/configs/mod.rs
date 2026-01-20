@@ -182,7 +182,8 @@ impl pallet_travel_points::Config for Runtime {
 	type WeightInfo = pallet_travel_points::weights::SubstrateWeight<Runtime>;
 	/// Maximum number of point batches a user can have (100 is reasonable for most use cases)
 	type MaxPointBatches = ConstU32<100>;
-	/// Default expiration period for points: approximately 1 year
-	/// With 6-second blocks: 365 days * 24 hours * 60 min * 10 blocks/min ≈ 5,256,000 blocks
+	/// Default expiration period for points: approximately 1 year.
+	/// Calculation: 365 days * 24 hours * 60 minutes * 10 blocks/minute = 5,256,000 blocks
+	/// (Assumes 6-second block time, which is standard for Substrate chains)
 	type DefaultExpirationPeriod = ConstU32<5256000>;
 }

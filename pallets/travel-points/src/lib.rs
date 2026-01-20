@@ -56,6 +56,8 @@ pub use weights::*;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+	// DecodeWithMemTracking is required for enum types used in storage and events
+	// to enable memory-safe decoding in the FRAME runtime
 	use codec::DecodeWithMemTracking;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
