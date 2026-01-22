@@ -9,6 +9,7 @@ repository = "https://github.com/paritytech/polkadot-sdk-solochain-template.git"
 members = [
 	"node",
 	"pallets/template",
+	"pallets/travel-points",
 	"runtime",
 ]
 resolver = "2"
@@ -16,6 +17,7 @@ resolver = "2"
 [workspace.dependencies]
 # members
 pallet-template = { path = "./pallets/template", default-features = false }
+pallet-travel-points = { path = "./pallets/travel-points", default-features = false }
 solochain-template-node = { path = "./node", default-features = false }
 solochain-template-runtime = { path = "./runtime", default-features = false }
 

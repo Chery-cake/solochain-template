@@ -169,3 +169,21 @@ impl pallet_template::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
 }
+
+/// Configure the pallet-travel-points for managing loyalty points.
+/// 
+/// This pallet implements a travel points system similar to airline mileage programs.
+/// Points can be earned through authorized issuers (like smart contracts) and spent
+/// using a FIFO (First In, First Out) system where oldest points are used first.
+impl pallet_travel_points::Config for Runtime {
+	/// The overarching event type
+	type RuntimeEvent = RuntimeEvent;
+	/// Weight information for the pallet's extrinsics
+	type WeightInfo = pallet_travel_points::weights::SubstrateWeight<Runtime>;
+	/// Maximum number of point batches a user can have (100 is reasonable for most use cases)
+	type MaxPointBatches = ConstU32<100>;
+	/// Default expiration period for points: approximately 1 year.
+	/// Calculation: 365 days * 24 hours * 60 minutes * 10 blocks/minute = 5,256,000 blocks
+	/// (Assumes 6-second block time, which is standard for Substrate chains)
+	type DefaultExpirationPeriod = ConstU32<{365 * 24 * 60 * 10}>;
+}

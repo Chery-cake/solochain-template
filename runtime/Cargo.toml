@@ -62,6 +62,9 @@ frame-system-benchmarking = { optional = true, workspace = true }
 # The pallet in this template.
 pallet-template = { workspace = true }
 
+# Travel points pallet for loyalty point management.
+pallet-travel-points = { workspace = true }
+
 [build-dependencies]
 substrate-wasm-builder = { optional = true, workspace = true, default-features = true }
 
@@ -85,6 +88,7 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
+	"pallet-travel-points/std",
 	"scale-info/std",
 	"serde_json/std",
 	"sp-api/std",
@@ -114,6 +118,7 @@ runtime-benchmarks = [
 	"pallet-template/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-transaction-payment/runtime-benchmarks",
+	"pallet-travel-points/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
@@ -128,6 +133,7 @@ try-runtime = [
 	"pallet-template/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
+	"pallet-travel-points/try-runtime",
 	"sp-runtime/try-runtime",
 ]
 
