@@ -901,7 +901,7 @@ pub mod pallet {
 		/// - `departure_time`: Departure time
 		/// - `metadata`: Additional metadata
 		#[pallet::call_index(6)]
-		#[pallet::weight(T::WeightInfo::award_points())]
+		#[pallet::weight(T::WeightInfo::mint_ticket())]
 		pub fn mint_ticket(
 			origin: OriginFor<T>,
 			owner: T::AccountId,
@@ -981,7 +981,7 @@ pub mod pallet {
 		/// - `origin`: Must be the ticket owner
 		/// - `ticket_id`: ID of the ticket to redeem
 		#[pallet::call_index(7)]
-		#[pallet::weight(T::WeightInfo::spend_points())]
+		#[pallet::weight(T::WeightInfo::redeem_ticket())]
 		pub fn redeem_ticket(origin: OriginFor<T>, ticket_id: u128) -> DispatchResult {
 			let owner = ensure_signed(origin)?;
 
@@ -1012,7 +1012,7 @@ pub mod pallet {
 		/// - `ticket_id`: ID of the ticket to transfer
 		/// - `to`: The new owner
 		#[pallet::call_index(8)]
-		#[pallet::weight(T::WeightInfo::spend_points())]
+		#[pallet::weight(T::WeightInfo::transfer_ticket())]
 		pub fn transfer_ticket(
 			origin: OriginFor<T>,
 			ticket_id: u128,
@@ -1054,7 +1054,7 @@ pub mod pallet {
 		/// - `origin`: The staker account
 		/// - `amount`: Amount to stake (must be >= MinStakeAmount)
 		#[pallet::call_index(9)]
-		#[pallet::weight(T::WeightInfo::spend_points())]
+		#[pallet::weight(T::WeightInfo::stake())]
 		pub fn stake(origin: OriginFor<T>, amount: u128) -> DispatchResult {
 			let staker = ensure_signed(origin)?;
 
@@ -1088,7 +1088,7 @@ pub mod pallet {
 		/// ## Parameters
 		/// - `origin`: The staker account
 		#[pallet::call_index(10)]
-		#[pallet::weight(T::WeightInfo::spend_points())]
+		#[pallet::weight(T::WeightInfo::unstake())]
 		pub fn unstake(origin: OriginFor<T>) -> DispatchResult {
 			let staker = ensure_signed(origin)?;
 
@@ -1119,7 +1119,7 @@ pub mod pallet {
 		/// - `origin`: Any signed origin
 		/// - `amount`: Amount to add to the reward pool
 		#[pallet::call_index(11)]
-		#[pallet::weight(T::WeightInfo::spend_points())]
+		#[pallet::weight(T::WeightInfo::add_to_reward_pool())]
 		pub fn add_to_reward_pool(origin: OriginFor<T>, amount: u128) -> DispatchResult {
 			ensure_signed(origin)?;
 			ensure!(!amount.is_zero(), Error::<T>::ZeroAmount);
