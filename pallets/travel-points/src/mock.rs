@@ -55,6 +55,16 @@ impl pallet_travel_points::Config for Test {
 	// Note: Uses ConstU64 because TestDefaultConfig uses u64 for BlockNumber,
 	// while the real runtime uses ConstU32 (runtime BlockNumber is u32)
 	type DefaultExpirationPeriod = frame_support::traits::ConstU64<1000>;
+	// Maximum 50 tickets per user in tests
+	type MaxTicketsPerUser = frame_support::traits::ConstU32<50>;
+	// Maximum 100 stakers in tests
+	type MaxStakers = frame_support::traits::ConstU32<100>;
+	// Minimum stake amount: 100 tokens
+	type MinStakeAmount = frame_support::traits::ConstU128<100>;
+	// Staker reward percentage: 30% (3000 basis points)
+	type StakerRewardPercent = frame_support::traits::ConstU32<3000>;
+	// Blocks per reward period: 100 blocks (about 10 minutes with 6 second blocks)
+	type BlocksPerRewardPeriod = frame_support::traits::ConstU64<100>;
 }
 
 // Helper function to build the genesis storage for tests

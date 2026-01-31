@@ -175,6 +175,7 @@ impl pallet_template::Config for Runtime {
 /// This pallet implements a travel points system similar to airline mileage programs.
 /// Points can be earned through authorized issuers (like smart contracts) and spent
 /// using a FIFO (First In, First Out) system where oldest points are used first.
+/// It also supports NFT tickets, staking for verifiers, and issuer reward distribution.
 impl pallet_travel_points::Config for Runtime {
 	/// The overarching event type
 	type RuntimeEvent = RuntimeEvent;
@@ -186,4 +187,14 @@ impl pallet_travel_points::Config for Runtime {
 	/// Calculation: 365 days * 24 hours * 60 minutes * 10 blocks/minute = 5,256,000 blocks
 	/// (Assumes 6-second block time, which is standard for Substrate chains)
 	type DefaultExpirationPeriod = ConstU32<{365 * 24 * 60 * 10}>;
+	/// Maximum number of tickets a user can own (100 tickets)
+	type MaxTicketsPerUser = ConstU32<100>;
+	/// Maximum number of stakers (1000 stakers)
+	type MaxStakers = ConstU32<1000>;
+	/// Minimum stake amount: 1000 units (1 UNIT = 1_000_000_000_000)
+	type MinStakeAmount = ConstU128<{1000 * 1_000_000_000_000}>;
+	/// Staker reward percentage: 30% (3000 basis points)
+	type StakerRewardPercent = ConstU32<3000>;
+	/// Blocks per reward period: 1 day worth of blocks (14400 blocks with 6s block time)
+	type BlocksPerRewardPeriod = ConstU32<{24 * 60 * 10}>;
 }
