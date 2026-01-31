@@ -5,8 +5,10 @@
 //! - Spending points with FIFO
 //! - Expiration handling
 //! - Admin and issuer management
+//! - NFT Tickets
+//! - Staking
 
-use crate::{mock::*, Error, Event, TotalPoints, TravelType, UserPoints};
+use crate::{mock::*, Error, Event, TotalPoints, TravelType, UserPoints, TicketType};
 use frame_support::{assert_noop, assert_ok};
 
 // ============================================================================
@@ -125,8 +127,8 @@ fn spend_points_works() {
 			None
 		));
 
-		// Now spend some points
-		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(10), 300));
+		// Now spend some points (with issuer 2)
+		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(10), 300, 2));
 
 		// Check balance was updated
 		assert_eq!(TotalPoints::<Test>::get(10), 700);
@@ -137,7 +139,7 @@ fn spend_points_works() {
 
 		// Check event
 		System::assert_last_event(
-			Event::PointsSpent { user: 10, amount_spent: 300, remaining_balance: 700 }.into(),
+			Event::PointsSpent { user: 10, amount_spent: 300, remaining_balance: 700, issuer: 2 }.into(),
 		);
 	});
 }
@@ -172,7 +174,7 @@ fn spend_points_fifo_works() {
 		assert_eq!(TotalPoints::<Test>::get(10), 1000);
 
 		// Spend 600 points - should take all 500 from first batch and 100 from second
-		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(10), 600));
+		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(10), 600, 2));
 
 		let batches = UserPoints::<Test>::get(10);
 		// First batch should be removed (empty)
@@ -200,7 +202,7 @@ fn spend_points_insufficient_fails() {
 
 		// Try to spend 600
 		assert_noop!(
-			TravelPoints::spend_points(RuntimeOrigin::signed(10), 600),
+			TravelPoints::spend_points(RuntimeOrigin::signed(10), 600, 2),
 			Error::<Test>::InsufficientPoints
 		);
 	});
@@ -221,8 +223,30 @@ fn spend_points_zero_fails() {
 		));
 
 		assert_noop!(
-			TravelPoints::spend_points(RuntimeOrigin::signed(10), 0),
+			TravelPoints::spend_points(RuntimeOrigin::signed(10), 0, 2),
 			Error::<Test>::ZeroAmount
+		);
+	});
+}
+
+/// Test spending with unauthorized issuer fails
+#[test]
+fn spend_points_unauthorized_issuer_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::award_points(
+			RuntimeOrigin::signed(2),
+			10,
+			500,
+			TravelType::Airline,
+			None
+		));
+
+		// Try to spend with unauthorized issuer (account 5)
+		assert_noop!(
+			TravelPoints::spend_points(RuntimeOrigin::signed(10), 100, 5),
+			Error::<Test>::NotAuthorizedIssuer
 		);
 	});
 }
@@ -454,7 +478,7 @@ fn spend_across_batches_removes_empty() {
 		assert_eq!(UserPoints::<Test>::get(10).len(), 3);
 
 		// Spend 250 - should empty first 2 batches and take 50 from third
-		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(10), 250));
+		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(10), 250, 2));
 
 		// Only 1 batch left with 50 points
 		let batches = UserPoints::<Test>::get(10);
@@ -567,5 +591,336 @@ fn contract_is_authorized_issuer_works() {
 
 		// Account 5 is not authorized
 		assert!(!TravelPoints::contract_is_authorized_issuer(&5));
+	});
+}
+
+// ============================================================================
+// NFT TICKET TESTS
+// ============================================================================
+
+/// Test minting a ticket NFT
+#[test]
+fn mint_ticket_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// First award some points to the user
+		assert_ok!(TravelPoints::award_points(
+			RuntimeOrigin::signed(2),
+			10,
+			1000,
+			TravelType::Airline,
+			None
+		));
+
+		// Mint a ticket (costs 500 points)
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),  // issuer
+			10,                        // owner
+			TicketType::PlaneTicket,
+			500,                       // points cost
+			Some(2000),                // expires at
+			b"John Doe".to_vec(),      // passenger_name
+			b"AB123".to_vec(),         // travel_number
+			b"A12".to_vec(),           // gate
+			b"15A".to_vec(),           // seat
+			b"New York".to_vec(),      // departure
+			b"Los Angeles".to_vec(),   // arrival
+			b"2024-03-15 10:00".to_vec(), // departure_time
+			b"Business Class".to_vec(),  // metadata
+		));
+
+		// Check points were deducted
+		assert_eq!(TotalPoints::<Test>::get(10), 500);
+
+		// Check ticket was created
+		let ticket = TravelPoints::get_ticket(0).expect("Ticket should exist");
+		assert_eq!(ticket.owner, 10);
+		assert_eq!(ticket.issuer, 2);
+		assert_eq!(ticket.ticket_type, TicketType::PlaneTicket);
+		assert_eq!(ticket.points_cost, 500);
+		assert!(!ticket.is_redeemed);
+
+		// Check user owns the ticket
+		let user_tickets = TravelPoints::get_user_tickets(&10);
+		assert_eq!(user_tickets.len(), 1);
+		assert_eq!(user_tickets[0], 0);
+	});
+}
+
+/// Test minting a ticket with no point cost (free ticket)
+#[test]
+fn mint_free_ticket_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a free bonus ticket
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::Bonus,
+			0,                          // free
+			None,                       // no expiration
+			b"Jane Doe".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"Lounge Access".to_vec(),
+		));
+
+		let ticket = TravelPoints::get_ticket(0).expect("Ticket should exist");
+		assert_eq!(ticket.ticket_type, TicketType::Bonus);
+		assert_eq!(ticket.points_cost, 0);
+	});
+}
+
+/// Test redeeming a ticket
+#[test]
+fn redeem_ticket_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::TrainTicket,
+			0,
+			None,
+			b"Test User".to_vec(),
+			b"TR456".to_vec(),
+			b"".to_vec(),
+			b"22B".to_vec(),
+			b"Chicago".to_vec(),
+			b"Detroit".to_vec(),
+			b"2024-04-01 14:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Redeem the ticket
+		assert_ok!(TravelPoints::redeem_ticket(RuntimeOrigin::signed(10), 0));
+
+		// Check ticket is redeemed
+		let ticket = TravelPoints::get_ticket(0).expect("Ticket should exist");
+		assert!(ticket.is_redeemed);
+
+		// Cannot redeem again
+		assert_noop!(
+			TravelPoints::redeem_ticket(RuntimeOrigin::signed(10), 0),
+			Error::<Test>::TicketAlreadyRedeemed
+		);
+	});
+}
+
+/// Test transfer ticket
+#[test]
+fn transfer_ticket_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket for user 10
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::BusTicket,
+			0,
+			None,
+			b"Original Owner".to_vec(),
+			b"BUS001".to_vec(),
+			b"".to_vec(),
+			b"5".to_vec(),
+			b"City A".to_vec(),
+			b"City B".to_vec(),
+			b"2024-05-01 09:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Transfer to user 20
+		assert_ok!(TravelPoints::transfer_ticket(RuntimeOrigin::signed(10), 0, 20));
+
+		// Check new ownership
+		let ticket = TravelPoints::get_ticket(0).expect("Ticket should exist");
+		assert_eq!(ticket.owner, 20);
+
+		// Check user ticket lists updated
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 0);
+		assert_eq!(TravelPoints::get_user_tickets(&20).len(), 1);
+	});
+}
+
+/// Test unauthorized issuer cannot mint ticket
+#[test]
+fn mint_ticket_unauthorized_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_noop!(
+			TravelPoints::mint_ticket(
+				RuntimeOrigin::signed(5),  // unauthorized
+				10,
+				TicketType::PlaneTicket,
+				0,
+				None,
+				b"Test".to_vec(),
+				b"".to_vec(),
+				b"".to_vec(),
+				b"".to_vec(),
+				b"".to_vec(),
+				b"".to_vec(),
+				b"".to_vec(),
+				b"".to_vec(),
+			),
+			Error::<Test>::NotAuthorizedIssuer
+		);
+	});
+}
+
+// ============================================================================
+// STAKING TESTS
+// ============================================================================
+
+/// Test basic staking
+#[test]
+fn stake_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Stake 500 tokens
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 500));
+
+		// Check stake info
+		let stake_info = TravelPoints::get_stake_info(&10).expect("Stake should exist");
+		assert_eq!(stake_info.amount, 500);
+		assert_eq!(stake_info.staked_at, 1);
+		assert!(!stake_info.is_verifier);
+
+		// Check total staked
+		assert_eq!(TravelPoints::total_staked(), 500);
+
+		// Check staker is in list
+		let stakers = TravelPoints::get_all_stakers();
+		assert!(stakers.contains(&10));
+	});
+}
+
+/// Test staking below minimum fails
+#[test]
+fn stake_below_minimum_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Try to stake 50 tokens (below minimum of 100)
+		assert_noop!(
+			TravelPoints::stake(RuntimeOrigin::signed(10), 50),
+			Error::<Test>::StakeBelowMinimum
+		);
+	});
+}
+
+/// Test cannot stake twice
+#[test]
+fn stake_twice_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 500));
+
+		assert_noop!(
+			TravelPoints::stake(RuntimeOrigin::signed(10), 300),
+			Error::<Test>::AlreadyStaking
+		);
+	});
+}
+
+/// Test unstaking
+#[test]
+fn unstake_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// First stake
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 500));
+		assert_eq!(TravelPoints::total_staked(), 500);
+
+		// Then unstake
+		assert_ok!(TravelPoints::unstake(RuntimeOrigin::signed(10)));
+
+		// Check stake removed
+		assert!(TravelPoints::get_stake_info(&10).is_none());
+		assert_eq!(TravelPoints::total_staked(), 0);
+
+		// Check removed from staker list
+		let stakers = TravelPoints::get_all_stakers();
+		assert!(!stakers.contains(&10));
+	});
+}
+
+/// Test unstaking without stake fails
+#[test]
+fn unstake_not_staker_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_noop!(
+			TravelPoints::unstake(RuntimeOrigin::signed(10)),
+			Error::<Test>::NotStaker
+		);
+	});
+}
+
+/// Test add to reward pool
+#[test]
+fn add_to_reward_pool_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::add_to_reward_pool(RuntimeOrigin::signed(10), 1000));
+		assert_eq!(TravelPoints::reward_pool(), 1000);
+
+		assert_ok!(TravelPoints::add_to_reward_pool(RuntimeOrigin::signed(20), 500));
+		assert_eq!(TravelPoints::reward_pool(), 1500);
+	});
+}
+
+// ============================================================================
+// ISSUER TRACKING TESTS
+// ============================================================================
+
+/// Test that spending points tracks issuer spending
+#[test]
+fn issuer_spending_tracked() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Award points
+		assert_ok!(TravelPoints::award_points(
+			RuntimeOrigin::signed(2),
+			10,
+			1000,
+			TravelType::Airline,
+			None
+		));
+
+		// Spend with issuer 2
+		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(10), 300, 2));
+
+		// Check issuer record
+		let period = TravelPoints::current_period();
+		let record = TravelPoints::get_issuer_period_record(period, &2);
+		assert_eq!(record.points_spent, 300);
+		assert_eq!(record.transaction_count, 1);
+
+		// Check period total
+		assert_eq!(TravelPoints::get_period_total_spent(period), 300);
+
+		// Spend more
+		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(10), 200, 2));
+
+		let record = TravelPoints::get_issuer_period_record(period, &2);
+		assert_eq!(record.points_spent, 500);
+		assert_eq!(record.transaction_count, 2);
 	});
 }
