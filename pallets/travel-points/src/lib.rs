@@ -168,7 +168,7 @@ pub mod pallet {
 		pub departure: BoundedVec<u8, ConstU32<MAX_STRING_LEN>>,
 		/// Arrival location
 		pub arrival: BoundedVec<u8, ConstU32<MAX_STRING_LEN>>,
-		/// Departure time (as timestamp or encoded string)
+		/// Departure time as encoded string (e.g., "2024-03-15 10:00", ISO 8601, or custom format)
 		pub departure_time: BoundedVec<u8, ConstU32<MAX_STRING_LEN>>,
 		/// Additional metadata/notes
 		pub metadata: BoundedVec<u8, ConstU32<MAX_STRING_LEN>>,
@@ -1231,11 +1231,18 @@ pub mod pallet {
 				.collect()
 		}
 
-		/// Get the current reward period number based on block number
+		/// Get the current reward period number based on block number.
+		/// Periods are used for tracking issuer rewards and staker distributions.
+		/// 
+		/// Note: If BlocksPerRewardPeriod is configured as zero, falls back to
+		/// using the current block number as the period (each block is its own period).
+		/// This should be avoided in production configurations.
 		pub fn current_period() -> BlockNumberFor<T> {
 			let current_block = frame_system::Pallet::<T>::block_number();
 			let blocks_per_period = T::BlocksPerRewardPeriod::get();
 			if blocks_per_period.is_zero() {
+				// Fallback: treat each block as its own period
+				// This is not recommended for production use
 				return current_block;
 			}
 			current_block / blocks_per_period
