@@ -52,7 +52,7 @@ mod benchmarks {
 
 		// Award points first
 		let _ = TravelPoints::<T>::award_points(
-			RawOrigin::Signed(issuer).into(),
+			RawOrigin::Signed(issuer.clone()).into(),
 			user.clone(),
 			2000,
 			TravelType::Airline,
@@ -62,7 +62,7 @@ mod benchmarks {
 		let spend_amount: u128 = 500;
 
 		#[extrinsic_call]
-		spend_points(RawOrigin::Signed(user.clone()), spend_amount);
+		spend_points(RawOrigin::Signed(user.clone()), spend_amount, issuer.clone());
 
 		// Verify the result
 		assert_eq!(TotalPoints::<T>::get(&user), 1500);
@@ -138,6 +138,169 @@ mod benchmarks {
 
 		// Verify the result
 		assert_eq!(Admin::<T>::get(), Some(new_admin));
+	}
+
+	#[benchmark]
+	fn mint_ticket() {
+		// Setup: Create an admin and authorized issuer
+		let admin: T::AccountId = whitelisted_caller();
+		Admin::<T>::put(&admin);
+
+		let issuer: T::AccountId = account("issuer", 0, 0);
+		AuthorizedIssuers::<T>::insert(&issuer, true);
+
+		let owner: T::AccountId = account("owner", 0, 0);
+
+		// Award points to owner first (for points_cost)
+		let _ = TravelPoints::<T>::award_points(
+			RawOrigin::Signed(issuer.clone()).into(),
+			owner.clone(),
+			2000,
+			TravelType::Airline,
+			None,
+		);
+
+		let points_cost: u128 = 500;
+
+		#[extrinsic_call]
+		mint_ticket(
+			RawOrigin::Signed(issuer.clone()),
+			owner.clone(),
+			TicketType::PlaneTicket,
+			points_cost,
+			None,
+			b"John Doe".to_vec(),
+			b"AB123".to_vec(),
+			b"A12".to_vec(),
+			b"15A".to_vec(),
+			b"New York".to_vec(),
+			b"Los Angeles".to_vec(),
+			b"2024-03-15 10:00".to_vec(),
+			b"Business Class".to_vec(),
+		);
+
+		// Verify the result - ticket was created
+		assert_eq!(NextTicketId::<T>::get(), 1);
+		// Points were deducted
+		assert_eq!(TotalPoints::<T>::get(&owner), 1500);
+	}
+
+	#[benchmark]
+	fn redeem_ticket() {
+		// Setup: Create a ticket first
+		let admin: T::AccountId = whitelisted_caller();
+		Admin::<T>::put(&admin);
+
+		let issuer: T::AccountId = account("issuer", 0, 0);
+		AuthorizedIssuers::<T>::insert(&issuer, true);
+
+		let owner: T::AccountId = account("owner", 0, 0);
+
+		// Mint a free ticket
+		let _ = TravelPoints::<T>::mint_ticket(
+			RawOrigin::Signed(issuer).into(),
+			owner.clone(),
+			TicketType::TrainTicket,
+			0, // free ticket
+			None,
+			b"Test User".to_vec(),
+			b"TR456".to_vec(),
+			b"".to_vec(),
+			b"22B".to_vec(),
+			b"Chicago".to_vec(),
+			b"Detroit".to_vec(),
+			b"2024-04-01 14:00".to_vec(),
+			b"".to_vec(),
+		);
+
+		let ticket_id = 0u128;
+
+		#[extrinsic_call]
+		redeem_ticket(RawOrigin::Signed(owner), ticket_id);
+
+		// Verify the ticket is redeemed
+		let ticket = Tickets::<T>::get(ticket_id).unwrap();
+		assert!(ticket.is_redeemed);
+	}
+
+	#[benchmark]
+	fn transfer_ticket() {
+		// Setup: Create a ticket first
+		let admin: T::AccountId = whitelisted_caller();
+		Admin::<T>::put(&admin);
+
+		let issuer: T::AccountId = account("issuer", 0, 0);
+		AuthorizedIssuers::<T>::insert(&issuer, true);
+
+		let from: T::AccountId = account("from", 0, 0);
+		let to: T::AccountId = account("to", 0, 0);
+
+		// Mint a ticket for 'from' account
+		let _ = TravelPoints::<T>::mint_ticket(
+			RawOrigin::Signed(issuer).into(),
+			from.clone(),
+			TicketType::BusTicket,
+			0,
+			None,
+			b"Original Owner".to_vec(),
+			b"BUS001".to_vec(),
+			b"".to_vec(),
+			b"5".to_vec(),
+			b"City A".to_vec(),
+			b"City B".to_vec(),
+			b"2024-05-01 09:00".to_vec(),
+			b"".to_vec(),
+		);
+
+		let ticket_id = 0u128;
+
+		#[extrinsic_call]
+		transfer_ticket(RawOrigin::Signed(from.clone()), ticket_id, to.clone());
+
+		// Verify the ticket ownership changed
+		let ticket = Tickets::<T>::get(ticket_id).unwrap();
+		assert_eq!(ticket.owner, to);
+	}
+
+	#[benchmark]
+	fn stake() {
+		let staker: T::AccountId = whitelisted_caller();
+		let amount: u128 = 1000;
+
+		#[extrinsic_call]
+		stake(RawOrigin::Signed(staker.clone()), amount);
+
+		// Verify stake was created
+		assert!(Stakes::<T>::get(&staker).is_some());
+		assert_eq!(TotalStaked::<T>::get(), amount);
+	}
+
+	#[benchmark]
+	fn unstake() {
+		// Setup: First create a stake
+		let staker: T::AccountId = whitelisted_caller();
+		let amount: u128 = 1000;
+
+		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), amount);
+
+		#[extrinsic_call]
+		unstake(RawOrigin::Signed(staker.clone()));
+
+		// Verify stake was removed
+		assert!(Stakes::<T>::get(&staker).is_none());
+		assert_eq!(TotalStaked::<T>::get(), 0);
+	}
+
+	#[benchmark]
+	fn add_to_reward_pool() {
+		let contributor: T::AccountId = whitelisted_caller();
+		let amount: u128 = 5000;
+
+		#[extrinsic_call]
+		add_to_reward_pool(RawOrigin::Signed(contributor), amount);
+
+		// Verify the pool was updated
+		assert_eq!(RewardPool::<T>::get(), amount);
 	}
 
 	impl_benchmark_test_suite!(TravelPoints, crate::mock::new_test_ext(), crate::mock::Test);

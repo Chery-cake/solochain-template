@@ -191,8 +191,8 @@ impl pallet_travel_points::Config for Runtime {
 	type MaxTicketsPerUser = ConstU32<100>;
 	/// Maximum number of stakers (1000 stakers)
 	type MaxStakers = ConstU32<1000>;
-	/// Minimum stake amount: 1000 units (1 UNIT = 1_000_000_000_000)
-	type MinStakeAmount = ConstU128<{ 1000 * 1_000_000_000_000 }>;
+	/// Minimum stake amount: 1000 units
+	type MinStakeAmount = ConstU128<1000>;
 	/// Staker reward percentage: 30% (3000 basis points)
 	type StakerRewardPercent = ConstU32<3000>;
 	/// Blocks per reward period: 1 day worth of blocks (14400 blocks with 6s block time)
