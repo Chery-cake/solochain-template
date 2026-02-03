@@ -334,7 +334,8 @@ mod benchmarks {
 		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), stake_amount);
 		let _ = TravelPoints::<T>::request_unbond(RawOrigin::Signed(staker.clone()).into(), 1000);
 
-		// Move blocks forward past unbonding period
+		// Move blocks forward past unbonding period (default is 50 blocks in test config)
+		// Using 1000 blocks to ensure we're well past any configured unbonding period
 		frame_system::Pallet::<T>::set_block_number(1000u32.into());
 
 		#[extrinsic_call]
@@ -384,6 +385,7 @@ mod benchmarks {
 	fn create_pool() {
 		let operator: T::AccountId = whitelisted_caller();
 		let initial_stake: u128 = 1000;
+		// Commission in basis points (1000 = 10%, 10000 = 100%)
 		let commission: u32 = 1000; // 10%
 
 		#[extrinsic_call]
@@ -397,6 +399,7 @@ mod benchmarks {
 	fn delegate() {
 		// Setup: Create a pool first
 		let operator: T::AccountId = account("operator", 0, 0);
+		// Pool with 1000 stake and 10% commission (1000 basis points)
 		let _ = TravelPoints::<T>::create_pool(
 			RawOrigin::Signed(operator.clone()).into(),
 			1000,
@@ -435,14 +438,15 @@ mod benchmarks {
 
 	#[benchmark]
 	fn set_pool_commission() {
-		// Setup: Create a pool
+		// Setup: Create a pool with 10% commission
 		let operator: T::AccountId = whitelisted_caller();
 		let _ = TravelPoints::<T>::create_pool(
 			RawOrigin::Signed(operator.clone()).into(),
 			1000,
-			1000,
+			1000, // 10% commission in basis points
 		);
 
+		// Update to 20% commission (2000 basis points)
 		let new_commission: u32 = 2000;
 
 		#[extrinsic_call]
@@ -455,12 +459,12 @@ mod benchmarks {
 
 	#[benchmark]
 	fn close_pool() {
-		// Setup: Create a pool
+		// Setup: Create a pool with 10% commission
 		let operator: T::AccountId = whitelisted_caller();
 		let _ = TravelPoints::<T>::create_pool(
 			RawOrigin::Signed(operator.clone()).into(),
 			1000,
-			1000,
+			1000, // 10% commission in basis points
 		);
 
 		#[extrinsic_call]
@@ -476,7 +480,8 @@ mod benchmarks {
 		let staker: T::AccountId = whitelisted_caller();
 		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), 1000);
 
-		// Move blocks forward past era
+		// Move blocks forward past era (default BlocksPerEra is 200 in test config)
+		// Using 500 blocks to ensure we're past the era boundary
 		frame_system::Pallet::<T>::set_block_number(500u32.into());
 
 		#[extrinsic_call]
