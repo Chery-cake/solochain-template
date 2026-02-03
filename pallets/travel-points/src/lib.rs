@@ -1578,7 +1578,7 @@ pub mod pallet {
 		/// - `origin`: The staker account
 		/// - `amount`: Amount to unbond (must be <= current stake)
 		#[pallet::call_index(12)]
-		#[pallet::weight(T::WeightInfo::unstake())]
+		#[pallet::weight(T::WeightInfo::request_unbond())]
 		pub fn request_unbond(origin: OriginFor<T>, amount: u128) -> DispatchResult {
 			let staker = ensure_signed(origin)?;
 
@@ -1624,7 +1624,7 @@ pub mod pallet {
 		/// ## Parameters
 		/// - `origin`: The staker account
 		#[pallet::call_index(13)]
-		#[pallet::weight(T::WeightInfo::unstake())]
+		#[pallet::weight(T::WeightInfo::withdraw_unbonded())]
 		pub fn withdraw_unbonded(origin: OriginFor<T>) -> DispatchResult {
 			let staker = ensure_signed(origin)?;
 
@@ -1673,7 +1673,7 @@ pub mod pallet {
 		/// ## Parameters
 		/// - `origin`: The staker account
 		#[pallet::call_index(14)]
-		#[pallet::weight(T::WeightInfo::stake())]
+		#[pallet::weight(T::WeightInfo::cancel_unbonding())]
 		pub fn cancel_unbonding(origin: OriginFor<T>) -> DispatchResult {
 			let staker = ensure_signed(origin)?;
 
@@ -1715,7 +1715,7 @@ pub mod pallet {
 		/// - `staker`: Account to slash
 		/// - `reason`: Reason for slashing
 		#[pallet::call_index(15)]
-		#[pallet::weight(T::WeightInfo::unstake())]
+		#[pallet::weight(T::WeightInfo::slash_staker())]
 		pub fn slash_staker(
 			origin: OriginFor<T>,
 			staker: T::AccountId,
@@ -1780,7 +1780,7 @@ pub mod pallet {
 		/// - `initial_stake`: Initial stake from operator
 		/// - `commission`: Commission rate in basis points (max: MaxPoolCommission)
 		#[pallet::call_index(16)]
-		#[pallet::weight(T::WeightInfo::stake())]
+		#[pallet::weight(T::WeightInfo::create_pool())]
 		pub fn create_pool(
 			origin: OriginFor<T>,
 			initial_stake: u128,
@@ -1829,7 +1829,7 @@ pub mod pallet {
 		/// - `pool_id`: Pool to delegate to
 		/// - `amount`: Amount to delegate
 		#[pallet::call_index(17)]
-		#[pallet::weight(T::WeightInfo::stake())]
+		#[pallet::weight(T::WeightInfo::delegate())]
 		pub fn delegate(origin: OriginFor<T>, pool_id: u32, amount: u128) -> DispatchResult {
 			let delegator = ensure_signed(origin)?;
 
@@ -1878,7 +1878,7 @@ pub mod pallet {
 		/// ## Parameters
 		/// - `origin`: The delegator account
 		#[pallet::call_index(18)]
-		#[pallet::weight(T::WeightInfo::unstake())]
+		#[pallet::weight(T::WeightInfo::undelegate())]
 		pub fn undelegate(origin: OriginFor<T>) -> DispatchResult {
 			let delegator = ensure_signed(origin)?;
 
@@ -1920,7 +1920,7 @@ pub mod pallet {
 		/// - `pool_id`: Pool ID
 		/// - `new_commission`: New commission rate in basis points
 		#[pallet::call_index(19)]
-		#[pallet::weight(T::WeightInfo::set_admin())]
+		#[pallet::weight(T::WeightInfo::set_pool_commission())]
 		pub fn set_pool_commission(
 			origin: OriginFor<T>,
 			pool_id: u32,
@@ -1950,7 +1950,7 @@ pub mod pallet {
 		/// - `origin`: Must be pool operator
 		/// - `pool_id`: Pool ID
 		#[pallet::call_index(20)]
-		#[pallet::weight(T::WeightInfo::unstake())]
+		#[pallet::weight(T::WeightInfo::close_pool())]
 		pub fn close_pool(origin: OriginFor<T>, pool_id: u32) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
@@ -1974,7 +1974,7 @@ pub mod pallet {
 		/// Trigger era rotation and verifier selection. Can be called by anyone when due.
 		/// Selects verifiers based on stake-weighted randomness.
 		#[pallet::call_index(21)]
-		#[pallet::weight(T::WeightInfo::stake())]
+		#[pallet::weight(T::WeightInfo::rotate_era())]
 		pub fn rotate_era(origin: OriginFor<T>) -> DispatchResult {
 			ensure_signed(origin)?;
 
@@ -2014,7 +2014,7 @@ pub mod pallet {
 		/// - `origin`: Must be admin
 		/// - `period`: Period number to distribute rewards for
 		#[pallet::call_index(22)]
-		#[pallet::weight(T::WeightInfo::add_to_reward_pool())]
+		#[pallet::weight(T::WeightInfo::distribute_rewards())]
 		pub fn distribute_rewards(
 			origin: OriginFor<T>,
 			period: BlockNumberFor<T>,
@@ -2080,7 +2080,7 @@ pub mod pallet {
 
 		/// Claim pending rewards (for stakers or issuers).
 		#[pallet::call_index(23)]
-		#[pallet::weight(T::WeightInfo::add_to_reward_pool())]
+		#[pallet::weight(T::WeightInfo::claim_rewards())]
 		pub fn claim_rewards(origin: OriginFor<T>) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
@@ -2105,7 +2105,7 @@ pub mod pallet {
 		/// - `origin`: The staker account
 		/// - `amount`: Additional amount to stake
 		#[pallet::call_index(24)]
-		#[pallet::weight(T::WeightInfo::stake())]
+		#[pallet::weight(T::WeightInfo::increase_stake())]
 		pub fn increase_stake(origin: OriginFor<T>, amount: u128) -> DispatchResult {
 			let staker = ensure_signed(origin)?;
 

@@ -303,5 +303,237 @@ mod benchmarks {
 		assert_eq!(RewardPool::<T>::get(), amount);
 	}
 
+	// ============================================================================
+	// ADVANCED STAKING BENCHMARKS
+	// ============================================================================
+
+	#[benchmark]
+	fn request_unbond() {
+		// Setup: Create a stake first
+		let staker: T::AccountId = whitelisted_caller();
+		let stake_amount: u128 = 2000;
+
+		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), stake_amount);
+
+		let unbond_amount: u128 = 1000;
+
+		#[extrinsic_call]
+		request_unbond(RawOrigin::Signed(staker.clone()), unbond_amount);
+
+		// Verify stake was reduced
+		let stake_info = Stakes::<T>::get(&staker).unwrap();
+		assert_eq!(stake_info.amount, 1000);
+	}
+
+	#[benchmark]
+	fn withdraw_unbonded() {
+		// Setup: Create a stake and request unbonding
+		let staker: T::AccountId = whitelisted_caller();
+		let stake_amount: u128 = 2000;
+
+		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), stake_amount);
+		let _ = TravelPoints::<T>::request_unbond(RawOrigin::Signed(staker.clone()).into(), 1000);
+
+		// Move blocks forward past unbonding period
+		frame_system::Pallet::<T>::set_block_number(1000u32.into());
+
+		#[extrinsic_call]
+		withdraw_unbonded(RawOrigin::Signed(staker.clone()));
+
+		// Verify unbonding requests are cleared
+		let requests = UnbondingRequests::<T>::get(&staker);
+		assert!(requests.is_empty());
+	}
+
+	#[benchmark]
+	fn cancel_unbonding() {
+		// Setup: Create a stake and request unbonding
+		let staker: T::AccountId = whitelisted_caller();
+		let stake_amount: u128 = 2000;
+
+		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), stake_amount);
+		let _ = TravelPoints::<T>::request_unbond(RawOrigin::Signed(staker.clone()).into(), 1000);
+
+		#[extrinsic_call]
+		cancel_unbonding(RawOrigin::Signed(staker.clone()));
+
+		// Verify stake was restored
+		let stake_info = Stakes::<T>::get(&staker).unwrap();
+		assert_eq!(stake_info.amount, 2000);
+	}
+
+	#[benchmark]
+	fn slash_staker() {
+		// Setup: Create an admin and a stake
+		let admin: T::AccountId = whitelisted_caller();
+		Admin::<T>::put(&admin);
+
+		let staker: T::AccountId = account("staker", 0, 0);
+		let stake_amount: u128 = 1000;
+		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), stake_amount);
+
+		#[extrinsic_call]
+		slash_staker(RawOrigin::Signed(admin), staker.clone(), SlashReason::Offline);
+
+		// Verify stake was reduced
+		let stake_info = Stakes::<T>::get(&staker).unwrap();
+		assert!(stake_info.amount < stake_amount);
+	}
+
+	#[benchmark]
+	fn create_pool() {
+		let operator: T::AccountId = whitelisted_caller();
+		let initial_stake: u128 = 1000;
+		let commission: u32 = 1000; // 10%
+
+		#[extrinsic_call]
+		create_pool(RawOrigin::Signed(operator.clone()), initial_stake, commission);
+
+		// Verify pool was created
+		assert!(Pools::<T>::get(0).is_some());
+	}
+
+	#[benchmark]
+	fn delegate() {
+		// Setup: Create a pool first
+		let operator: T::AccountId = account("operator", 0, 0);
+		let _ = TravelPoints::<T>::create_pool(
+			RawOrigin::Signed(operator.clone()).into(),
+			1000,
+			1000,
+		);
+
+		let delegator: T::AccountId = whitelisted_caller();
+		let delegate_amount: u128 = 500;
+
+		#[extrinsic_call]
+		delegate(RawOrigin::Signed(delegator.clone()), 0, delegate_amount);
+
+		// Verify delegation was created
+		assert!(Delegations::<T>::get(&delegator).is_some());
+	}
+
+	#[benchmark]
+	fn undelegate() {
+		// Setup: Create a pool and delegate
+		let operator: T::AccountId = account("operator", 0, 0);
+		let _ = TravelPoints::<T>::create_pool(
+			RawOrigin::Signed(operator.clone()).into(),
+			1000,
+			1000,
+		);
+
+		let delegator: T::AccountId = whitelisted_caller();
+		let _ = TravelPoints::<T>::delegate(RawOrigin::Signed(delegator.clone()).into(), 0, 500);
+
+		#[extrinsic_call]
+		undelegate(RawOrigin::Signed(delegator.clone()));
+
+		// Verify delegation was removed
+		assert!(Delegations::<T>::get(&delegator).is_none());
+	}
+
+	#[benchmark]
+	fn set_pool_commission() {
+		// Setup: Create a pool
+		let operator: T::AccountId = whitelisted_caller();
+		let _ = TravelPoints::<T>::create_pool(
+			RawOrigin::Signed(operator.clone()).into(),
+			1000,
+			1000,
+		);
+
+		let new_commission: u32 = 2000;
+
+		#[extrinsic_call]
+		set_pool_commission(RawOrigin::Signed(operator.clone()), 0, new_commission);
+
+		// Verify commission was updated
+		let pool = Pools::<T>::get(0).unwrap();
+		assert_eq!(pool.commission, new_commission);
+	}
+
+	#[benchmark]
+	fn close_pool() {
+		// Setup: Create a pool
+		let operator: T::AccountId = whitelisted_caller();
+		let _ = TravelPoints::<T>::create_pool(
+			RawOrigin::Signed(operator.clone()).into(),
+			1000,
+			1000,
+		);
+
+		#[extrinsic_call]
+		close_pool(RawOrigin::Signed(operator.clone()), 0);
+
+		// Verify pool was removed
+		assert!(Pools::<T>::get(0).is_none());
+	}
+
+	#[benchmark]
+	fn rotate_era() {
+		// Setup: Create some stakers
+		let staker: T::AccountId = whitelisted_caller();
+		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), 1000);
+
+		// Move blocks forward past era
+		frame_system::Pallet::<T>::set_block_number(500u32.into());
+
+		#[extrinsic_call]
+		rotate_era(RawOrigin::Signed(staker.clone()));
+
+		// Verify era was rotated
+		assert_eq!(CurrentEra::<T>::get(), 1);
+	}
+
+	#[benchmark]
+	fn distribute_rewards() {
+		// Setup: Create admin, stake, and reward pool
+		let admin: T::AccountId = whitelisted_caller();
+		Admin::<T>::put(&admin);
+
+		let staker: T::AccountId = account("staker", 0, 0);
+		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), 1000);
+
+		RewardPool::<T>::put(10000u128);
+
+		let period: BlockNumberFor<T> = 0u32.into();
+
+		#[extrinsic_call]
+		distribute_rewards(RawOrigin::Signed(admin), period);
+
+		// Verify reward pool was emptied
+		assert_eq!(RewardPool::<T>::get(), 0);
+	}
+
+	#[benchmark]
+	fn claim_rewards() {
+		// Setup: Create pending rewards
+		let caller: T::AccountId = whitelisted_caller();
+		PendingStakerRewards::<T>::insert(&caller, 5000u128);
+
+		#[extrinsic_call]
+		claim_rewards(RawOrigin::Signed(caller.clone()));
+
+		// Verify rewards were claimed
+		assert_eq!(PendingStakerRewards::<T>::get(&caller), 0);
+	}
+
+	#[benchmark]
+	fn increase_stake() {
+		// Setup: Create an initial stake
+		let staker: T::AccountId = whitelisted_caller();
+		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), 1000);
+
+		let increase_amount: u128 = 500;
+
+		#[extrinsic_call]
+		increase_stake(RawOrigin::Signed(staker.clone()), increase_amount);
+
+		// Verify stake was increased
+		let stake_info = Stakes::<T>::get(&staker).unwrap();
+		assert_eq!(stake_info.amount, 1500);
+	}
+
 	impl_benchmark_test_suite!(TravelPoints, crate::mock::new_test_ext(), crate::mock::Test);
 }
