@@ -2413,13 +2413,21 @@ pub mod pallet {
 				return Vec::new();
 			}
 
-			// Use era number as pseudo-random seed for deterministic selection
-			let seed = era as u128;
-			let mut selected: Vec<T::AccountId> = Vec::new();
+			// Deterministic stake-weighted selection
+			// Sort by stake (descending), then by encoded account for determinism with equal stakes
+			candidates.sort_by(|a, b| {
+				match b.1.cmp(&a.1) {
+					core::cmp::Ordering::Equal => {
+						// Use encoded account as deterministic tie-breaker
+						let a_encoded = a.0.encode();
+						let b_encoded = b.0.encode();
+						a_encoded.cmp(&b_encoded)
+					}
+					other => other,
+				}
+			});
 
-			// Simple stake-weighted selection (deterministic)
-			// Sort by stake (descending) and select top N
-			candidates.sort_by(|a, b| b.1.cmp(&a.1));
+			let mut selected: Vec<T::AccountId> = Vec::new();
 
 			for (staker, _stake) in candidates.iter().take(max_verifiers) {
 				selected.push(staker.clone());
@@ -2439,7 +2447,6 @@ pub mod pallet {
 			}
 
 			// Clear verifier status for non-selected stakers
-			let _ = seed; // Use seed to avoid unused warning (could be used for randomness)
 			for (staker, _) in candidates.iter().skip(max_verifiers) {
 				Stakes::<T>::mutate(staker, |maybe_info| {
 					if let Some(info) = maybe_info {

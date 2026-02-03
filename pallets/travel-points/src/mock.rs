@@ -63,7 +63,7 @@ impl pallet_travel_points::Config for Test {
 	type MinStakeAmount = frame_support::traits::ConstU128<100>;
 	// Staker reward percentage: 30% (3000 basis points)
 	type StakerRewardPercent = frame_support::traits::ConstU32<3000>;
-	// Blocks per reward period: 100 blocks (about 17 secconds with 6 second blocks)
+	// Blocks per reward period: 100 blocks (about 10 minutes with 6 second blocks)
 	type BlocksPerRewardPeriod = frame_support::traits::ConstU64<100>;
 
 	// ============================================================================
