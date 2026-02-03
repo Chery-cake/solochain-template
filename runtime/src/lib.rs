@@ -216,11 +216,7 @@ mod runtime {
 	#[runtime::pallet_index(6)]
 	pub type Sudo = pallet_sudo;
 
-	// Include the custom logic from the pallet-template in the runtime.
-	#[runtime::pallet_index(7)]
-	pub type Template = pallet_template;
-
 	// Include the travel points pallet for loyalty point management.
-	#[runtime::pallet_index(8)]
+	#[runtime::pallet_index(7)]
 	pub type TravelPoints = pallet_travel_points;
 }
