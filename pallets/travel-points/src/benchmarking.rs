@@ -13,6 +13,9 @@ use frame_system::RawOrigin;
 #[benchmarks]
 mod benchmarks {
 	use super::*;
+	use frame_support::traits::Get;
+	use frame_system::pallet_prelude::BlockNumberFor;
+	use sp_runtime::traits::Saturating;
 
 	#[benchmark]
 	fn award_points() {
@@ -329,14 +332,19 @@ mod benchmarks {
 	fn withdraw_unbonded() {
 		// Setup: Create a stake and request unbonding
 		let staker: T::AccountId = whitelisted_caller();
-		let stake_amount: u128 = 2000;
+		let stake_amount: u128 = T::MinStakeAmount::get().saturating_mul(2);
 
 		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), stake_amount);
-		let _ = TravelPoints::<T>::request_unbond(RawOrigin::Signed(staker.clone()).into(), 1000);
+		let _ = TravelPoints::<T>::request_unbond(
+			RawOrigin::Signed(staker.clone()).into(),
+			T::MinStakeAmount::get(),
+		);
 
-		// Move blocks forward past unbonding period (default is 50 blocks in test config)
-		// Using 1000 blocks to ensure we're well past any configured unbonding period
-		frame_system::Pallet::<T>::set_block_number(1000u32.into());
+		// Move blocks forward past unbonding period
+		// Add extra buffer to ensure we're past any configured unbonding period
+		let unbonding_period: BlockNumberFor<T> = T::UnbondingPeriod::get();
+		let target_block = unbonding_period.saturating_add(100u32.into());
+		frame_system::Pallet::<T>::set_block_number(target_block);
 
 		#[extrinsic_call]
 		withdraw_unbonded(RawOrigin::Signed(staker.clone()));
@@ -384,7 +392,8 @@ mod benchmarks {
 	#[benchmark]
 	fn create_pool() {
 		let operator: T::AccountId = whitelisted_caller();
-		let initial_stake: u128 = 1000;
+		// Use MinPoolOperatorStake to ensure we meet the minimum requirement
+		let initial_stake: u128 = T::MinPoolOperatorStake::get();
 		// Commission in basis points (1000 = 10%, 10000 = 100%)
 		let commission: u32 = 1000; // 10%
 
@@ -397,17 +406,17 @@ mod benchmarks {
 
 	#[benchmark]
 	fn delegate() {
-		// Setup: Create a pool first
+		// Setup: Create a pool first with sufficient operator stake
 		let operator: T::AccountId = account("operator", 0, 0);
-		// Pool with 1000 stake and 10% commission (1000 basis points)
 		let _ = TravelPoints::<T>::create_pool(
 			RawOrigin::Signed(operator.clone()).into(),
-			1000,
-			1000,
+			T::MinPoolOperatorStake::get(),
+			1000, // 10% commission in basis points
 		);
 
 		let delegator: T::AccountId = whitelisted_caller();
-		let delegate_amount: u128 = 500;
+		// Use MinStakeAmount to meet minimum delegation requirement
+		let delegate_amount: u128 = T::MinStakeAmount::get();
 
 		#[extrinsic_call]
 		delegate(RawOrigin::Signed(delegator.clone()), 0, delegate_amount);
@@ -418,16 +427,20 @@ mod benchmarks {
 
 	#[benchmark]
 	fn undelegate() {
-		// Setup: Create a pool and delegate
+		// Setup: Create a pool and delegate with proper minimum amounts
 		let operator: T::AccountId = account("operator", 0, 0);
 		let _ = TravelPoints::<T>::create_pool(
 			RawOrigin::Signed(operator.clone()).into(),
-			1000,
-			1000,
+			T::MinPoolOperatorStake::get(),
+			1000, // 10% commission in basis points
 		);
 
 		let delegator: T::AccountId = whitelisted_caller();
-		let _ = TravelPoints::<T>::delegate(RawOrigin::Signed(delegator.clone()).into(), 0, 500);
+		let _ = TravelPoints::<T>::delegate(
+			RawOrigin::Signed(delegator.clone()).into(),
+			0,
+			T::MinStakeAmount::get(),
+		);
 
 		#[extrinsic_call]
 		undelegate(RawOrigin::Signed(delegator.clone()));
@@ -438,11 +451,11 @@ mod benchmarks {
 
 	#[benchmark]
 	fn set_pool_commission() {
-		// Setup: Create a pool with 10% commission
+		// Setup: Create a pool with proper operator stake
 		let operator: T::AccountId = whitelisted_caller();
 		let _ = TravelPoints::<T>::create_pool(
 			RawOrigin::Signed(operator.clone()).into(),
-			1000,
+			T::MinPoolOperatorStake::get(),
 			1000, // 10% commission in basis points
 		);
 
@@ -459,11 +472,11 @@ mod benchmarks {
 
 	#[benchmark]
 	fn close_pool() {
-		// Setup: Create a pool with 10% commission
+		// Setup: Create a pool with proper operator stake
 		let operator: T::AccountId = whitelisted_caller();
 		let _ = TravelPoints::<T>::create_pool(
 			RawOrigin::Signed(operator.clone()).into(),
-			1000,
+			T::MinPoolOperatorStake::get(),
 			1000, // 10% commission in basis points
 		);
 
@@ -476,13 +489,18 @@ mod benchmarks {
 
 	#[benchmark]
 	fn rotate_era() {
-		// Setup: Create some stakers
+		// Setup: Create some stakers with proper minimum stake
 		let staker: T::AccountId = whitelisted_caller();
-		let _ = TravelPoints::<T>::stake(RawOrigin::Signed(staker.clone()).into(), 1000);
+		let _ = TravelPoints::<T>::stake(
+			RawOrigin::Signed(staker.clone()).into(),
+			T::MinStakeAmount::get(),
+		);
 
-		// Move blocks forward past era (default BlocksPerEra is 200 in test config)
-		// Using 500 blocks to ensure we're past the era boundary
-		frame_system::Pallet::<T>::set_block_number(500u32.into());
+		// Move blocks forward past era using BlocksPerEra from config
+		// Add extra buffer to ensure we're past the era boundary
+		let blocks_per_era: BlockNumberFor<T> = T::BlocksPerEra::get();
+		let target_block = blocks_per_era.saturating_add(100u32.into());
+		frame_system::Pallet::<T>::set_block_number(target_block);
 
 		#[extrinsic_call]
 		rotate_era(RawOrigin::Signed(staker.clone()));
