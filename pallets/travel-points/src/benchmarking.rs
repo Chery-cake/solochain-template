@@ -266,6 +266,120 @@ mod benchmarks {
 	}
 
 	#[benchmark]
+	fn unmint_ticket() {
+		// Setup: Create a ticket first
+		let admin: T::AccountId = whitelisted_caller();
+		Admin::<T>::put(&admin);
+
+		let issuer: T::AccountId = account("issuer", 0, 0);
+		AuthorizedIssuers::<T>::insert(&issuer, true);
+
+		let owner: T::AccountId = account("owner", 0, 0);
+
+		// Mint a ticket for 'owner' account
+		let _ = TravelPoints::<T>::mint_ticket(
+			RawOrigin::Signed(issuer).into(),
+			owner.clone(),
+			TicketType::BusTicket,
+			0,
+			None,
+			b"Owner".to_vec(),
+			b"BUS001".to_vec(),
+			b"".to_vec(),
+			b"5".to_vec(),
+			b"City A".to_vec(),
+			b"City B".to_vec(),
+			b"2024-05-01 09:00".to_vec(),
+			b"".to_vec(),
+		);
+
+		let ticket_id = 0u128;
+
+		#[extrinsic_call]
+		unmint_ticket(RawOrigin::Signed(owner), ticket_id);
+
+		// Verify the ticket was removed
+		assert!(Tickets::<T>::get(ticket_id).is_none());
+	}
+
+	#[benchmark]
+	fn force_unmint_ticket() {
+		// Setup: Create a ticket first
+		let admin: T::AccountId = whitelisted_caller();
+		Admin::<T>::put(&admin);
+
+		let issuer: T::AccountId = account("issuer", 0, 0);
+		AuthorizedIssuers::<T>::insert(&issuer, true);
+
+		let owner: T::AccountId = account("owner", 0, 0);
+
+		// Mint a ticket for 'owner' account
+		let _ = TravelPoints::<T>::mint_ticket(
+			RawOrigin::Signed(issuer).into(),
+			owner.clone(),
+			TicketType::BusTicket,
+			0,
+			None,
+			b"Owner".to_vec(),
+			b"BUS001".to_vec(),
+			b"".to_vec(),
+			b"5".to_vec(),
+			b"City A".to_vec(),
+			b"City B".to_vec(),
+			b"2024-05-01 09:00".to_vec(),
+			b"".to_vec(),
+		);
+
+		let ticket_id = 0u128;
+
+		#[extrinsic_call]
+		force_unmint_ticket(RawOrigin::Signed(admin), ticket_id);
+
+		// Verify the ticket was removed
+		assert!(Tickets::<T>::get(ticket_id).is_none());
+	}
+
+	#[benchmark]
+	fn cleanup_expired_tickets() {
+		// Setup: Create expired tickets
+		let admin: T::AccountId = whitelisted_caller();
+		Admin::<T>::put(&admin);
+
+		let issuer: T::AccountId = account("issuer", 0, 0);
+		AuthorizedIssuers::<T>::insert(&issuer, true);
+
+		let user: T::AccountId = account("user", 0, 0);
+
+		// Mint a ticket that expires at block 1
+		let _ = TravelPoints::<T>::mint_ticket(
+			RawOrigin::Signed(issuer).into(),
+			user.clone(),
+			TicketType::BusTicket,
+			0,
+			Some(1u32.into()), // Expires at block 1
+			b"User".to_vec(),
+			b"BUS001".to_vec(),
+			b"".to_vec(),
+			b"5".to_vec(),
+			b"City A".to_vec(),
+			b"City B".to_vec(),
+			b"2024-05-01 09:00".to_vec(),
+			b"".to_vec(),
+		);
+
+		// Move to block 10 so the ticket is expired
+		frame_system::Pallet::<T>::set_block_number(10u32.into());
+
+		let caller: T::AccountId = account("caller", 0, 0);
+
+		#[extrinsic_call]
+		cleanup_expired_tickets(RawOrigin::Signed(caller), user.clone());
+
+		// Verify the ticket was removed
+		assert!(Tickets::<T>::get(0u128).is_none());
+	}
+
+	#[benchmark]
 	fn stake() {
 		let staker: T::AccountId = whitelisted_caller();
 		let amount: u128 = 1000;

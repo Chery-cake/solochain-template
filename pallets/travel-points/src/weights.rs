@@ -40,6 +40,9 @@ pub trait WeightInfo {
 	fn mint_ticket() -> Weight;
 	fn redeem_ticket() -> Weight;
 	fn transfer_ticket() -> Weight;
+	fn unmint_ticket() -> Weight;
+	fn force_unmint_ticket() -> Weight;
+	fn cleanup_expired_tickets() -> Weight;
 	fn stake() -> Weight;
 	fn unstake() -> Weight;
 	fn add_to_reward_pool() -> Weight;
@@ -193,6 +196,47 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(19_650_000, 9240)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Storage: `TravelPoints::Tickets` (r:1 w:1)
+	/// Proof: `TravelPoints::Tickets` (`max_values`: None, `max_size`: Some(1179), added: 3654, mode: `MaxEncodedLen`)
+	/// Storage: `TravelPoints::UserTickets` (r:1 w:1)
+	/// Proof: `TravelPoints::UserTickets` (`max_values`: None, `max_size`: Some(1650), added: 4125, mode: `MaxEncodedLen`)
+	fn unmint_ticket() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `415`
+		//  Estimated: `5115`
+		// Minimum execution time: 14_000_000 picoseconds.
+		Weight::from_parts(14_500_000, 5115)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
+	/// Storage: `TravelPoints::Admin` (r:1 w:0)
+	/// Proof: `TravelPoints::Admin` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `TravelPoints::Tickets` (r:1 w:1)
+	/// Proof: `TravelPoints::Tickets` (`max_values`: None, `max_size`: Some(1179), added: 3654, mode: `MaxEncodedLen`)
+	/// Storage: `TravelPoints::UserTickets` (r:1 w:1)
+	/// Proof: `TravelPoints::UserTickets` (`max_values`: None, `max_size`: Some(1650), added: 4125, mode: `MaxEncodedLen`)
+	fn force_unmint_ticket() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `415`
+		//  Estimated: `5115`
+		// Minimum execution time: 16_000_000 picoseconds.
+		Weight::from_parts(16_500_000, 5115)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
+	/// Storage: `TravelPoints::UserTickets` (r:1 w:1)
+	/// Proof: `TravelPoints::UserTickets` (`max_values`: None, `max_size`: Some(1650), added: 4125, mode: `MaxEncodedLen`)
+	/// Storage: `TravelPoints::Tickets` (r:50 w:50)
+	/// Proof: `TravelPoints::Tickets` (`max_values`: None, `max_size`: Some(1179), added: 3654, mode: `MaxEncodedLen`)
+	fn cleanup_expired_tickets() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `415`
+		//  Estimated: `182700`
+		// Minimum execution time: 20_000_000 picoseconds.
+		Weight::from_parts(25_000_000, 182700)
+			.saturating_add(T::DbWeight::get().reads(51_u64))
+			.saturating_add(T::DbWeight::get().writes(51_u64))
 	}
 	/// Storage: `TravelPoints::Stakes` (r:1 w:1)
 	/// Proof: `TravelPoints::Stakes` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
@@ -572,6 +616,47 @@ impl WeightInfo for () {
 		Weight::from_parts(19_650_000, 9240)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Storage: `TravelPoints::Tickets` (r:1 w:1)
+	/// Proof: `TravelPoints::Tickets` (`max_values`: None, `max_size`: Some(1179), added: 3654, mode: `MaxEncodedLen`)
+	/// Storage: `TravelPoints::UserTickets` (r:1 w:1)
+	/// Proof: `TravelPoints::UserTickets` (`max_values`: None, `max_size`: Some(1650), added: 4125, mode: `MaxEncodedLen`)
+	fn unmint_ticket() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `415`
+		//  Estimated: `5115`
+		// Minimum execution time: 14_000_000 picoseconds.
+		Weight::from_parts(14_500_000, 5115)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+	/// Storage: `TravelPoints::Admin` (r:1 w:0)
+	/// Proof: `TravelPoints::Admin` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `TravelPoints::Tickets` (r:1 w:1)
+	/// Proof: `TravelPoints::Tickets` (`max_values`: None, `max_size`: Some(1179), added: 3654, mode: `MaxEncodedLen`)
+	/// Storage: `TravelPoints::UserTickets` (r:1 w:1)
+	/// Proof: `TravelPoints::UserTickets` (`max_values`: None, `max_size`: Some(1650), added: 4125, mode: `MaxEncodedLen`)
+	fn force_unmint_ticket() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `415`
+		//  Estimated: `5115`
+		// Minimum execution time: 16_000_000 picoseconds.
+		Weight::from_parts(16_500_000, 5115)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+	/// Storage: `TravelPoints::UserTickets` (r:1 w:1)
+	/// Proof: `TravelPoints::UserTickets` (`max_values`: None, `max_size`: Some(1650), added: 4125, mode: `MaxEncodedLen`)
+	/// Storage: `TravelPoints::Tickets` (r:50 w:50)
+	/// Proof: `TravelPoints::Tickets` (`max_values`: None, `max_size`: Some(1179), added: 3654, mode: `MaxEncodedLen`)
+	fn cleanup_expired_tickets() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `415`
+		//  Estimated: `182700`
+		// Minimum execution time: 20_000_000 picoseconds.
+		Weight::from_parts(25_000_000, 182700)
+			.saturating_add(RocksDbWeight::get().reads(51_u64))
+			.saturating_add(RocksDbWeight::get().writes(51_u64))
 	}
 	/// Storage: `TravelPoints::Stakes` (r:1 w:1)
 	/// Proof: `TravelPoints::Stakes` (`max_values`: None, `max_size`: Some(69), added: 2544, mode: `MaxEncodedLen`)
