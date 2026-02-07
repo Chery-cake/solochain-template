@@ -1447,3 +1447,538 @@ fn increase_stake_not_staker_fails() {
 		);
 	});
 }
+
+// ============================================================================
+// TICKET UNMINT (BURN) TESTS
+// ============================================================================
+
+/// Test unminting a ticket by owner
+#[test]
+fn unmint_ticket_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket for user 10
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::PlaneTicket,
+			0,
+			None,
+			b"Test User".to_vec(),
+			b"AB123".to_vec(),
+			b"A12".to_vec(),
+			b"15A".to_vec(),
+			b"New York".to_vec(),
+			b"Los Angeles".to_vec(),
+			b"2024-03-15 10:00".to_vec(),
+			b"Business Class".to_vec(),
+		));
+
+		// Verify ticket exists
+		assert!(TravelPoints::get_ticket(0).is_some());
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 1);
+
+		// Unmint the ticket
+		assert_ok!(TravelPoints::unmint_ticket(RuntimeOrigin::signed(10), 0));
+
+		// Verify ticket was removed
+		assert!(TravelPoints::get_ticket(0).is_none());
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 0);
+
+		// Check event
+		System::assert_last_event(Event::TicketUnminted { ticket_id: 0, owner: 10 }.into());
+	});
+}
+
+/// Test unminting a redeemed ticket works
+#[test]
+fn unmint_redeemed_ticket_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint and redeem a ticket
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::TrainTicket,
+			0,
+			None,
+			b"Test User".to_vec(),
+			b"TR456".to_vec(),
+			b"".to_vec(),
+			b"22B".to_vec(),
+			b"Chicago".to_vec(),
+			b"Detroit".to_vec(),
+			b"2024-04-01 14:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		assert_ok!(TravelPoints::redeem_ticket(RuntimeOrigin::signed(10), 0));
+
+		// Can still unmint the redeemed ticket
+		assert_ok!(TravelPoints::unmint_ticket(RuntimeOrigin::signed(10), 0));
+
+		assert!(TravelPoints::get_ticket(0).is_none());
+	});
+}
+
+/// Test unminting non-existent ticket fails
+#[test]
+fn unmint_ticket_not_found_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_noop!(
+			TravelPoints::unmint_ticket(RuntimeOrigin::signed(10), 999),
+			Error::<Test>::TicketNotFound
+		);
+	});
+}
+
+/// Test unminting ticket by non-owner fails
+#[test]
+fn unmint_ticket_not_owner_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket for user 10
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::BusTicket,
+			0,
+			None,
+			b"Test".to_vec(),
+			b"BUS001".to_vec(),
+			b"".to_vec(),
+			b"5".to_vec(),
+			b"City A".to_vec(),
+			b"City B".to_vec(),
+			b"2024-05-01 09:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// User 20 tries to unmint (not owner)
+		assert_noop!(
+			TravelPoints::unmint_ticket(RuntimeOrigin::signed(20), 0),
+			Error::<Test>::NotTicketOwner
+		);
+	});
+}
+
+/// Test double unmint fails
+#[test]
+fn unmint_ticket_double_unmint_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::Bonus,
+			0,
+			None,
+			b"Test".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"Lounge Access".to_vec(),
+		));
+
+		// First unmint succeeds
+		assert_ok!(TravelPoints::unmint_ticket(RuntimeOrigin::signed(10), 0));
+
+		// Second unmint fails (ticket already removed)
+		assert_noop!(
+			TravelPoints::unmint_ticket(RuntimeOrigin::signed(10), 0),
+			Error::<Test>::TicketNotFound
+		);
+	});
+}
+
+// ============================================================================
+// FORCE UNMINT (ADMIN) TESTS
+// ============================================================================
+
+/// Test force unminting by admin
+#[test]
+fn force_unmint_ticket_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket for user 10
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::PlaneTicket,
+			0,
+			None,
+			b"Test User".to_vec(),
+			b"AB123".to_vec(),
+			b"A12".to_vec(),
+			b"15A".to_vec(),
+			b"New York".to_vec(),
+			b"Los Angeles".to_vec(),
+			b"2024-03-15 10:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Admin (account 1) force unmints the ticket
+		assert_ok!(TravelPoints::force_unmint_ticket(RuntimeOrigin::signed(1), 0));
+
+		// Verify ticket was removed
+		assert!(TravelPoints::get_ticket(0).is_none());
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 0);
+
+		// Check event
+		System::assert_last_event(
+			Event::TicketForceUnminted { ticket_id: 0, owner: 10, admin: 1 }.into(),
+		);
+	});
+}
+
+/// Test force unminting by non-admin fails
+#[test]
+fn force_unmint_ticket_not_admin_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::TrainTicket,
+			0,
+			None,
+			b"Test".to_vec(),
+			b"TR456".to_vec(),
+			b"".to_vec(),
+			b"22B".to_vec(),
+			b"Chicago".to_vec(),
+			b"Detroit".to_vec(),
+			b"2024-04-01 14:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Non-admin (account 5) tries to force unmint
+		assert_noop!(
+			TravelPoints::force_unmint_ticket(RuntimeOrigin::signed(5), 0),
+			Error::<Test>::NotAdmin
+		);
+	});
+}
+
+/// Test force unminting non-existent ticket fails
+#[test]
+fn force_unmint_ticket_not_found_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_noop!(
+			TravelPoints::force_unmint_ticket(RuntimeOrigin::signed(1), 999),
+			Error::<Test>::TicketNotFound
+		);
+	});
+}
+
+// ============================================================================
+// EXPIRED TICKET CLEANUP TESTS
+// ============================================================================
+
+/// Test cleanup of expired tickets
+#[test]
+fn cleanup_expired_tickets_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket that expires at block 100
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::PlaneTicket,
+			0,
+			Some(100), // Expires at block 100
+			b"Test User".to_vec(),
+			b"AB123".to_vec(),
+			b"A12".to_vec(),
+			b"15A".to_vec(),
+			b"New York".to_vec(),
+			b"Los Angeles".to_vec(),
+			b"2024-03-15 10:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Verify ticket exists
+		assert!(TravelPoints::get_ticket(0).is_some());
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 1);
+
+		// Move past expiration
+		System::set_block_number(150);
+
+		// Cleanup expired tickets
+		assert_ok!(TravelPoints::cleanup_expired_tickets(RuntimeOrigin::signed(99), 10));
+
+		// Verify ticket was removed
+		assert!(TravelPoints::get_ticket(0).is_none());
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 0);
+
+		// Check event
+		System::assert_last_event(
+			Event::ExpiredTicketsCleaned { user: 10, tickets_removed: 1 }.into(),
+		);
+	});
+}
+
+/// Test cleanup with no expired tickets does nothing
+#[test]
+fn cleanup_expired_tickets_no_expired() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket that expires at block 1000
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::TrainTicket,
+			0,
+			Some(1000), // Expires at block 1000
+			b"Test".to_vec(),
+			b"TR456".to_vec(),
+			b"".to_vec(),
+			b"22B".to_vec(),
+			b"Chicago".to_vec(),
+			b"Detroit".to_vec(),
+			b"2024-04-01 14:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Still before expiration
+		System::set_block_number(500);
+
+		// Cleanup - but nothing to clean
+		assert_ok!(TravelPoints::cleanup_expired_tickets(RuntimeOrigin::signed(99), 10));
+
+		// Ticket should still exist
+		assert!(TravelPoints::get_ticket(0).is_some());
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 1);
+	});
+}
+
+/// Test cleanup with tickets that have no expiration
+#[test]
+fn cleanup_expired_tickets_no_expiration_date() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint a ticket with no expiration
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::Bonus,
+			0,
+			None, // No expiration
+			b"Test".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"Lounge Access".to_vec(),
+		));
+
+		// Move far into the future
+		System::set_block_number(1000000);
+
+		// Cleanup - should not remove ticket without expiration
+		assert_ok!(TravelPoints::cleanup_expired_tickets(RuntimeOrigin::signed(99), 10));
+
+		// Ticket should still exist
+		assert!(TravelPoints::get_ticket(0).is_some());
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 1);
+	});
+}
+
+/// Test cleanup removes only expired tickets (partial cleanup)
+#[test]
+fn cleanup_expired_tickets_partial() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint ticket that expires at block 50
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::PlaneTicket,
+			0,
+			Some(50), // Expires at block 50
+			b"Early Ticket".to_vec(),
+			b"AB123".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Mint ticket that expires at block 200
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::TrainTicket,
+			0,
+			Some(200), // Expires at block 200
+			b"Late Ticket".to_vec(),
+			b"TR456".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Mint ticket with no expiration
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::Bonus,
+			0,
+			None, // No expiration
+			b"Bonus".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+			b"".to_vec(),
+		));
+
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 3);
+
+		// Move to block 100 (only first ticket expired)
+		System::set_block_number(100);
+
+		// Cleanup
+		assert_ok!(TravelPoints::cleanup_expired_tickets(RuntimeOrigin::signed(99), 10));
+
+		// Only 2 tickets should remain
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 2);
+		assert!(TravelPoints::get_ticket(0).is_none()); // First ticket removed
+		assert!(TravelPoints::get_ticket(1).is_some()); // Second ticket still exists
+		assert!(TravelPoints::get_ticket(2).is_some()); // Bonus ticket still exists
+	});
+}
+
+/// Test cleanup for user with no tickets
+#[test]
+fn cleanup_expired_tickets_no_tickets() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Cleanup for user with no tickets - should succeed without error
+		assert_ok!(TravelPoints::cleanup_expired_tickets(RuntimeOrigin::signed(99), 10));
+
+		// No event should be emitted (no tickets cleaned)
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 0);
+	});
+}
+
+// ============================================================================
+// COMPLETE TICKET LIFECYCLE TESTS
+// ============================================================================
+
+/// Test full ticket lifecycle: mint -> transfer -> unmint
+#[test]
+fn ticket_lifecycle_mint_transfer_unmint() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Mint ticket for user 10
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::PlaneTicket,
+			0,
+			None,
+			b"Original Owner".to_vec(),
+			b"AB123".to_vec(),
+			b"A12".to_vec(),
+			b"15A".to_vec(),
+			b"New York".to_vec(),
+			b"Los Angeles".to_vec(),
+			b"2024-03-15 10:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Transfer to user 20
+		assert_ok!(TravelPoints::transfer_ticket(RuntimeOrigin::signed(10), 0, 20));
+
+		// User 10 cannot unmint (no longer owner)
+		assert_noop!(
+			TravelPoints::unmint_ticket(RuntimeOrigin::signed(10), 0),
+			Error::<Test>::NotTicketOwner
+		);
+
+		// User 20 can unmint
+		assert_ok!(TravelPoints::unmint_ticket(RuntimeOrigin::signed(20), 0));
+
+		// Ticket is gone
+		assert!(TravelPoints::get_ticket(0).is_none());
+		assert_eq!(TravelPoints::get_user_tickets(&10).len(), 0);
+		assert_eq!(TravelPoints::get_user_tickets(&20).len(), 0);
+	});
+}
+
+/// Test ticket lifecycle with points: mint with cost -> unmint (no refund)
+#[test]
+fn ticket_lifecycle_mint_with_points_unmint() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Award points
+		assert_ok!(TravelPoints::award_points(
+			RuntimeOrigin::signed(2),
+			10,
+			1000,
+			TravelType::Airline,
+			None
+		));
+
+		// Mint ticket with points cost
+		assert_ok!(TravelPoints::mint_ticket(
+			RuntimeOrigin::signed(2),
+			10,
+			TicketType::PlaneTicket,
+			500, // Points cost
+			None,
+			b"Test User".to_vec(),
+			b"AB123".to_vec(),
+			b"A12".to_vec(),
+			b"15A".to_vec(),
+			b"New York".to_vec(),
+			b"Los Angeles".to_vec(),
+			b"2024-03-15 10:00".to_vec(),
+			b"".to_vec(),
+		));
+
+		// Points were deducted
+		assert_eq!(TotalPoints::<Test>::get(10), 500);
+
+		// Unmint the ticket
+		assert_ok!(TravelPoints::unmint_ticket(RuntimeOrigin::signed(10), 0));
+
+		// Points are NOT refunded (unmint doesn't restore points)
+		assert_eq!(TotalPoints::<Test>::get(10), 500);
+
+		// Ticket is gone
+		assert!(TravelPoints::get_ticket(0).is_none());
+	});
+}

@@ -777,6 +777,32 @@ pub mod pallet {
 			to: T::AccountId,
 		},
 
+		/// A ticket was unminted/burned by its owner
+		TicketUnminted {
+			/// Ticket ID
+			ticket_id: u128,
+			/// Owner who burned it
+			owner: T::AccountId,
+		},
+
+		/// A ticket was forcibly unminted by admin
+		TicketForceUnminted {
+			/// Ticket ID
+			ticket_id: u128,
+			/// Previous owner
+			owner: T::AccountId,
+			/// Admin who performed the action
+			admin: T::AccountId,
+		},
+
+		/// Expired tickets were cleaned up
+		ExpiredTicketsCleaned {
+			/// Account whose tickets were cleaned
+			user: T::AccountId,
+			/// Number of tickets removed
+			tickets_removed: u32,
+		},
+
 		/// Tokens were staked
 		Staked {
 			/// Staker account
@@ -1476,6 +1502,142 @@ pub mod pallet {
 			})?;
 
 			Self::deposit_event(Event::TicketTransferred { ticket_id, from, to });
+
+			Ok(())
+		}
+
+		/// Unmint (burn) a ticket. Only the ticket owner can unmint their ticket.
+		/// This removes the ticket from storage permanently.
+		/// Note: Redeemed tickets can also be unminted.
+		///
+		/// ## Parameters
+		/// - `origin`: Must be the ticket owner
+		/// - `ticket_id`: ID of the ticket to unmint
+		///
+		/// ## Emits
+		/// - `TicketUnminted` on success
+		///
+		/// ## Errors
+		/// - `TicketNotFound` if the ticket doesn't exist
+		/// - `NotTicketOwner` if the caller doesn't own the ticket
+		#[pallet::call_index(25)]
+		#[pallet::weight(T::WeightInfo::unmint_ticket())]
+		pub fn unmint_ticket(origin: OriginFor<T>, ticket_id: u128) -> DispatchResult {
+			let owner = ensure_signed(origin)?;
+
+			// Get and validate ticket
+			let ticket = Tickets::<T>::get(ticket_id).ok_or(Error::<T>::TicketNotFound)?;
+			ensure!(ticket.owner == owner, Error::<T>::NotTicketOwner);
+
+			// Remove ticket from storage
+			Tickets::<T>::remove(ticket_id);
+
+			// Remove from user's ticket list
+			UserTickets::<T>::mutate(&owner, |tickets| {
+				tickets.retain(|&id| id != ticket_id);
+			});
+
+			Self::deposit_event(Event::TicketUnminted { ticket_id, owner });
+
+			Ok(())
+		}
+
+		/// Force unmint (burn) a ticket. Only callable by admin.
+		/// This allows administrators to forcibly remove tickets due to fraud, errors,
+		/// or other governance decisions.
+		///
+		/// ## Parameters
+		/// - `origin`: Must be the admin
+		/// - `ticket_id`: ID of the ticket to unmint
+		///
+		/// ## Emits
+		/// - `TicketForceUnminted` on success
+		///
+		/// ## Errors
+		/// - `NotAdmin` if the caller is not the admin
+		/// - `TicketNotFound` if the ticket doesn't exist
+		#[pallet::call_index(26)]
+		#[pallet::weight(T::WeightInfo::force_unmint_ticket())]
+		pub fn force_unmint_ticket(origin: OriginFor<T>, ticket_id: u128) -> DispatchResult {
+			let admin = ensure_signed(origin)?;
+			Self::ensure_admin(&admin)?;
+
+			// Get ticket to find owner
+			let ticket = Tickets::<T>::get(ticket_id).ok_or(Error::<T>::TicketNotFound)?;
+			let owner = ticket.owner.clone();
+
+			// Remove ticket from storage
+			Tickets::<T>::remove(ticket_id);
+
+			// Remove from user's ticket list
+			UserTickets::<T>::mutate(&owner, |tickets| {
+				tickets.retain(|&id| id != ticket_id);
+			});
+
+			Self::deposit_event(Event::TicketForceUnminted { ticket_id, owner, admin });
+
+			Ok(())
+		}
+
+		/// Clean up expired tickets for a user.
+		/// This is a maintenance function that can be called by anyone to remove
+		/// expired tickets from a user's storage. This helps keep storage clean
+		/// and reduces storage costs.
+		///
+		/// Only tickets with an expiration date that has passed will be removed.
+		/// Tickets without an expiration date are never removed by this function.
+		///
+		/// **Note**: To prevent unbounded iteration, this function processes at most
+		/// 50 tickets per call. If a user has more expired tickets, multiple calls
+		/// may be needed to clean up all of them.
+		///
+		/// ## Parameters
+		/// - `origin`: Any signed origin
+		/// - `user`: The account whose expired tickets should be cleaned
+		///
+		/// ## Emits
+		/// - `ExpiredTicketsCleaned` if any tickets were removed
+		#[pallet::call_index(27)]
+		#[pallet::weight(T::WeightInfo::cleanup_expired_tickets())]
+		pub fn cleanup_expired_tickets(origin: OriginFor<T>, user: T::AccountId) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			let current_block = frame_system::Pallet::<T>::block_number();
+			let mut tickets_removed: u32 = 0;
+			// Maximum number of tickets to process per call to prevent unbounded iteration
+			const MAX_CLEANUP_BATCH: usize = 50;
+
+			// Get all ticket IDs for the user (limited by MaxTicketsPerUser already)
+			let user_ticket_ids = UserTickets::<T>::get(&user).to_vec();
+
+			// Process at most MAX_CLEANUP_BATCH tickets
+			for ticket_id in user_ticket_ids.iter().take(MAX_CLEANUP_BATCH) {
+				if let Some(ticket) = Tickets::<T>::get(ticket_id) {
+					// Check if ticket has expired
+					if let Some(expires_at) = ticket.expires_at {
+						if expires_at <= current_block {
+							// Remove the expired ticket from storage
+							Tickets::<T>::remove(ticket_id);
+							tickets_removed = tickets_removed.saturating_add(1);
+						}
+					}
+				}
+			}
+
+			// Update user's ticket list to remove expired ticket IDs
+			if tickets_removed > 0 {
+				UserTickets::<T>::mutate(&user, |tickets| {
+					tickets.retain(|&id| {
+						// Keep only tickets that still exist in storage
+						Tickets::<T>::contains_key(id)
+					});
+				});
+
+				Self::deposit_event(Event::ExpiredTicketsCleaned {
+					user,
+					tickets_removed,
+				});
+			}
 
 			Ok(())
 		}
