@@ -63,8 +63,37 @@ impl pallet_travel_points::Config for Test {
 	type MinStakeAmount = frame_support::traits::ConstU128<100>;
 	// Staker reward percentage: 30% (3000 basis points)
 	type StakerRewardPercent = frame_support::traits::ConstU32<3000>;
-	// Blocks per reward period: 100 blocks (about 17 secconds with 6 second blocks)
+	// Blocks per reward period: 100 blocks (about 10 minutes with 6 second blocks)
 	type BlocksPerRewardPeriod = frame_support::traits::ConstU64<100>;
+
+	// ============================================================================
+	// ADVANCED STAKING CONFIGURATION
+	// ============================================================================
+
+	// Unbonding period: 50 blocks (~5 minutes in test)
+	type UnbondingPeriod = frame_support::traits::ConstU64<50>;
+	// Offline slash: 5% (500 basis points)
+	type OfflineSlashPercent = frame_support::traits::ConstU32<500>;
+	// Invalid verification slash: 10% (1000 basis points)
+	type InvalidVerificationSlashPercent = frame_support::traits::ConstU32<1000>;
+	// Malicious slash: 100% (10000 basis points)
+	type MaliciousSlashPercent = frame_support::traits::ConstU32<10000>;
+	// Maximum 50 pools in tests
+	type MaxPools = frame_support::traits::ConstU32<50>;
+	// Maximum 20 delegators per pool in tests
+	type MaxDelegatorsPerPool = frame_support::traits::ConstU32<20>;
+	// Minimum pool operator stake: 500 tokens
+	type MinPoolOperatorStake = frame_support::traits::ConstU128<500>;
+	// Maximum pool commission: 50% (5000 basis points)
+	type MaxPoolCommission = frame_support::traits::ConstU32<5000>;
+	// 5 verifiers selected per era in tests
+	type VerifiersPerEra = frame_support::traits::ConstU32<5>;
+	// Blocks per era: 200 blocks (~20 minutes in test)
+	type BlocksPerEra = frame_support::traits::ConstU64<200>;
+	// Issuer reward percentage: 20% (2000 basis points)
+	type IssuerRewardPercent = frame_support::traits::ConstU32<2000>;
+	// Maximum 10 unbonding requests per account
+	type MaxUnbondingRequests = frame_support::traits::ConstU32<10>;
 }
 
 // Helper function to build the genesis storage for tests

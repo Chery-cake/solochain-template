@@ -170,6 +170,13 @@ impl pallet_sudo::Config for Runtime {
 /// Points can be earned through authorized issuers (like smart contracts) and spent
 /// using a FIFO (First In, First Out) system where oldest points are used first.
 /// It also supports NFT tickets, staking for verifiers, and issuer reward distribution.
+///
+/// ## Advanced Staking Features
+/// - **Slashing**: Configurable penalties for misbehaving stakers/verifiers
+/// - **Unbonding**: Lock period between unstake request and withdrawal
+/// - **Delegation**: Stake delegation to validator pools with commission sharing
+/// - **Era-based Verifier Selection**: Stake-weighted verifier selection per era
+/// - **Issuer Rewards**: Issuers earn rewards based on point redemption through them
 impl pallet_travel_points::Config for Runtime {
 	/// The overarching event type
 	type RuntimeEvent = RuntimeEvent;
@@ -191,4 +198,34 @@ impl pallet_travel_points::Config for Runtime {
 	type StakerRewardPercent = ConstU32<3000>;
 	/// Blocks per reward period: 1 day worth of blocks (14400 blocks with 6s block time)
 	type BlocksPerRewardPeriod = ConstU32<{ 24 * 60 * 10 }>;
+
+	// ============================================================================
+	// ADVANCED STAKING CONFIGURATION
+	// ============================================================================
+
+	/// Unbonding period: ~7 days worth of blocks (100800 blocks with 6s block time)
+	type UnbondingPeriod = ConstU32<{ 7 * 24 * 60 * 10 }>;
+	/// Slash percentage for offline validators: 5% (500 basis points)
+	type OfflineSlashPercent = ConstU32<500>;
+	/// Slash percentage for invalid verification: 10% (1000 basis points)
+	type InvalidVerificationSlashPercent = ConstU32<1000>;
+	/// Slash percentage for malicious behavior: 100% (10000 basis points)
+	type MaliciousSlashPercent = ConstU32<10000>;
+	/// Maximum number of staking pools
+	type MaxPools = ConstU32<100>;
+	/// Maximum delegators per pool
+	type MaxDelegatorsPerPool = ConstU32<100>;
+	/// Minimum pool operator stake: 10000 units
+	type MinPoolOperatorStake = ConstU128<10000>;
+	/// Maximum pool commission: 30% (3000 basis points)
+	type MaxPoolCommission = ConstU32<3000>;
+	/// Number of verifiers selected per era
+	type VerifiersPerEra = ConstU32<21>;
+	/// Blocks per era: ~1 day worth of blocks (14400 blocks with 6s block time)
+	type BlocksPerEra = ConstU32<{ 24 * 60 * 10 }>;
+	/// Percentage of rewards going to issuers: 20% (2000 basis points)
+	/// This incentivizes issuers to participate in the network
+	type IssuerRewardPercent = ConstU32<2000>;
+	/// Maximum unbonding requests per account
+	type MaxUnbondingRequests = ConstU32<32>;
 }

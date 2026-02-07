@@ -922,3 +922,528 @@ fn issuer_spending_tracked() {
 		assert_eq!(record.transaction_count, 2);
 	});
 }
+
+// ============================================================================
+// ADVANCED STAKING TESTS - SLASHING
+// ============================================================================
+
+/// Test slashing a staker for offline behavior
+#[test]
+fn slash_staker_offline_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Stake 1000 tokens
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+		assert_eq!(TravelPoints::total_staked(), 1000);
+
+		// Admin slashes for offline (5% = 50 tokens)
+		assert_ok!(TravelPoints::slash_staker(
+			RuntimeOrigin::signed(1),
+			10,
+			crate::SlashReason::Offline
+		));
+
+		// Check stake was reduced
+		let stake_info = TravelPoints::get_stake_info(&10).expect("Stake should exist");
+		assert_eq!(stake_info.amount, 950); // 1000 - 50
+
+		// Check total slashed updated
+		assert_eq!(TravelPoints::total_slashed(), 50);
+
+		// Check slash record exists
+		let records = TravelPoints::get_slash_records(&10);
+		assert_eq!(records.len(), 1);
+		assert_eq!(records[0].amount, 50);
+	});
+}
+
+/// Test slashing for invalid verification (10%)
+#[test]
+fn slash_staker_invalid_verification_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+
+		assert_ok!(TravelPoints::slash_staker(
+			RuntimeOrigin::signed(1),
+			10,
+			crate::SlashReason::InvalidVerification
+		));
+
+		let stake_info = TravelPoints::get_stake_info(&10).expect("Stake should exist");
+		assert_eq!(stake_info.amount, 900); // 1000 - 100 (10%)
+	});
+}
+
+/// Test slashing for malicious behavior (100%)
+#[test]
+fn slash_staker_malicious_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+
+		assert_ok!(TravelPoints::slash_staker(
+			RuntimeOrigin::signed(1),
+			10,
+			crate::SlashReason::Malicious
+		));
+
+		let stake_info = TravelPoints::get_stake_info(&10).expect("Stake should exist");
+		assert_eq!(stake_info.amount, 0); // 1000 - 1000 (100%)
+	});
+}
+
+/// Test that non-admin cannot slash
+#[test]
+fn slash_staker_not_admin_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+
+		assert_noop!(
+			TravelPoints::slash_staker(RuntimeOrigin::signed(5), 10, crate::SlashReason::Offline),
+			Error::<Test>::NotAdmin
+		);
+	});
+}
+
+// ============================================================================
+// ADVANCED STAKING TESTS - UNBONDING
+// ============================================================================
+
+/// Test requesting unbonding
+#[test]
+fn request_unbond_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// First stake
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+
+		// Request unbonding of 500
+		assert_ok!(TravelPoints::request_unbond(RuntimeOrigin::signed(10), 500));
+
+		// Check stake reduced
+		let stake_info = TravelPoints::get_stake_info(&10).expect("Stake should exist");
+		assert_eq!(stake_info.amount, 500);
+
+		// Check unbonding request created
+		let requests = TravelPoints::get_unbonding_requests(&10);
+		assert_eq!(requests.len(), 1);
+		assert_eq!(requests[0].amount, 500);
+		assert_eq!(requests[0].requested_at, 1);
+		assert_eq!(requests[0].unlocks_at, 51); // 1 + 50 (unbonding period)
+	});
+}
+
+/// Test withdrawing unbonded tokens after period ends
+#[test]
+fn withdraw_unbonded_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+		assert_ok!(TravelPoints::request_unbond(RuntimeOrigin::signed(10), 500));
+
+		// Cannot withdraw before unbonding period ends
+		System::set_block_number(40);
+		assert_noop!(
+			TravelPoints::withdraw_unbonded(RuntimeOrigin::signed(10)),
+			Error::<Test>::UnbondingNotComplete
+		);
+
+		// Move past unbonding period
+		System::set_block_number(60);
+
+		// Now can withdraw
+		assert_ok!(TravelPoints::withdraw_unbonded(RuntimeOrigin::signed(10)));
+
+		// Check unbonding requests cleared
+		let requests = TravelPoints::get_unbonding_requests(&10);
+		assert_eq!(requests.len(), 0);
+	});
+}
+
+/// Test cancelling unbonding
+#[test]
+fn cancel_unbonding_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+		assert_ok!(TravelPoints::request_unbond(RuntimeOrigin::signed(10), 500));
+
+		// Verify stake reduced
+		let stake_before = TravelPoints::get_stake_info(&10).expect("Stake should exist");
+		assert_eq!(stake_before.amount, 500);
+
+		// Cancel unbonding
+		assert_ok!(TravelPoints::cancel_unbonding(RuntimeOrigin::signed(10)));
+
+		// Verify stake restored
+		let stake_after = TravelPoints::get_stake_info(&10).expect("Stake should exist");
+		assert_eq!(stake_after.amount, 1000);
+
+		// Verify requests cleared
+		let requests = TravelPoints::get_unbonding_requests(&10);
+		assert_eq!(requests.len(), 0);
+	});
+}
+
+// ============================================================================
+// ADVANCED STAKING TESTS - DELEGATION AND POOLS
+// ============================================================================
+
+/// Test creating a staking pool
+#[test]
+fn create_pool_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Create pool with 1000 stake and 10% commission
+		assert_ok!(TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 1000));
+
+		// Check pool created
+		let pool = TravelPoints::get_pool(0).expect("Pool should exist");
+		assert_eq!(pool.operator, 10);
+		assert_eq!(pool.total_stake, 1000);
+		assert_eq!(pool.operator_stake, 1000);
+		assert_eq!(pool.commission, 1000);
+		assert!(pool.is_active);
+		assert_eq!(pool.delegator_count, 0);
+
+		// Check next pool ID incremented
+		assert_eq!(TravelPoints::next_pool_id(), 1);
+
+		// Check total staked updated
+		assert_eq!(TravelPoints::total_staked(), 1000);
+	});
+}
+
+/// Test creating pool with insufficient stake fails
+#[test]
+fn create_pool_insufficient_stake_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Min pool operator stake is 500 in tests
+		assert_noop!(
+			TravelPoints::create_pool(RuntimeOrigin::signed(10), 100, 1000),
+			Error::<Test>::InsufficientOperatorStake
+		);
+	});
+}
+
+/// Test creating pool with excessive commission fails
+#[test]
+fn create_pool_excessive_commission_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Max commission is 5000 (50%) in tests
+		assert_noop!(
+			TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 6000),
+			Error::<Test>::CommissionTooHigh
+		);
+	});
+}
+
+/// Test delegating to a pool
+#[test]
+fn delegate_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Create pool first
+		assert_ok!(TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 1000));
+
+		// Delegate to pool
+		assert_ok!(TravelPoints::delegate(RuntimeOrigin::signed(20), 0, 500));
+
+		// Check delegation recorded
+		let delegation = TravelPoints::get_delegation(&20).expect("Delegation should exist");
+		assert_eq!(delegation.pool_id, 0);
+		assert_eq!(delegation.amount, 500);
+
+		// Check pool updated
+		let pool = TravelPoints::get_pool(0).expect("Pool should exist");
+		assert_eq!(pool.total_stake, 1500);
+		assert_eq!(pool.delegator_count, 1);
+
+		// Check delegator list
+		let delegators = TravelPoints::get_pool_delegators(0);
+		assert!(delegators.contains(&20));
+	});
+}
+
+/// Test cannot delegate below minimum
+#[test]
+fn delegate_below_minimum_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 1000));
+
+		// Min stake is 100 in tests
+		assert_noop!(
+			TravelPoints::delegate(RuntimeOrigin::signed(20), 0, 50),
+			Error::<Test>::DelegationBelowMinimum
+		);
+	});
+}
+
+/// Test undelegating from a pool
+#[test]
+fn undelegate_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 1000));
+		assert_ok!(TravelPoints::delegate(RuntimeOrigin::signed(20), 0, 500));
+
+		// Undelegate
+		assert_ok!(TravelPoints::undelegate(RuntimeOrigin::signed(20)));
+
+		// Check delegation removed
+		assert!(TravelPoints::get_delegation(&20).is_none());
+
+		// Check pool updated
+		let pool = TravelPoints::get_pool(0).expect("Pool should exist");
+		assert_eq!(pool.total_stake, 1000);
+		assert_eq!(pool.delegator_count, 0);
+	});
+}
+
+/// Test updating pool commission
+#[test]
+fn set_pool_commission_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 1000));
+
+		// Update commission
+		assert_ok!(TravelPoints::set_pool_commission(RuntimeOrigin::signed(10), 0, 2000));
+
+		let pool = TravelPoints::get_pool(0).expect("Pool should exist");
+		assert_eq!(pool.commission, 2000);
+	});
+}
+
+/// Test non-operator cannot update commission
+#[test]
+fn set_pool_commission_not_operator_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 1000));
+
+		assert_noop!(
+			TravelPoints::set_pool_commission(RuntimeOrigin::signed(20), 0, 2000),
+			Error::<Test>::NotPoolOperator
+		);
+	});
+}
+
+/// Test closing a pool
+#[test]
+fn close_pool_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 1000));
+
+		// Close pool
+		assert_ok!(TravelPoints::close_pool(RuntimeOrigin::signed(10), 0));
+
+		// Check pool removed
+		assert!(TravelPoints::get_pool(0).is_none());
+
+		// Check total staked reduced
+		assert_eq!(TravelPoints::total_staked(), 0);
+	});
+}
+
+/// Test cannot close pool with delegators
+#[test]
+fn close_pool_with_delegators_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::create_pool(RuntimeOrigin::signed(10), 1000, 1000));
+		assert_ok!(TravelPoints::delegate(RuntimeOrigin::signed(20), 0, 500));
+
+		assert_noop!(
+			TravelPoints::close_pool(RuntimeOrigin::signed(10), 0),
+			Error::<Test>::PoolHasDelegators
+		);
+	});
+}
+
+// ============================================================================
+// ADVANCED STAKING TESTS - ERA ROTATION AND VERIFIERS
+// ============================================================================
+
+/// Test era rotation and verifier selection
+#[test]
+fn rotate_era_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Create multiple stakers with different stakes
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(20), 2000));
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(30), 500));
+
+		// Move past blocks per era (200 in tests)
+		System::set_block_number(201);
+
+		// Rotate era
+		assert_ok!(TravelPoints::rotate_era(RuntimeOrigin::signed(99)));
+
+		// Check era incremented
+		assert_eq!(TravelPoints::current_era(), 1);
+
+		// Check verifiers selected (should select by highest stake)
+		let verifiers = TravelPoints::get_current_verifiers();
+		assert!(!verifiers.is_empty());
+
+		// Account 20 should be a verifier (highest stake)
+		assert!(TravelPoints::is_current_verifier(&20));
+	});
+}
+
+/// Test era rotation not due yet
+#[test]
+fn rotate_era_not_due_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(100); // Less than 200 blocks per era
+
+		assert_noop!(
+			TravelPoints::rotate_era(RuntimeOrigin::signed(99)),
+			Error::<Test>::EraRotationNotDue
+		);
+	});
+}
+
+// ============================================================================
+// ADVANCED STAKING TESTS - REWARDS
+// ============================================================================
+
+/// Test distributing rewards
+#[test]
+fn distribute_rewards_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		// Setup: Add staker and issuer spending
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+
+		// Add to reward pool
+		assert_ok!(TravelPoints::add_to_reward_pool(RuntimeOrigin::signed(99), 10000));
+
+		// Award and spend points to create issuer tracking
+		assert_ok!(TravelPoints::award_points(
+			RuntimeOrigin::signed(2),
+			30,
+			1000,
+			crate::TravelType::Airline,
+			None
+		));
+		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(30), 500, 2));
+
+		let period = TravelPoints::current_period();
+
+		// Distribute rewards
+		assert_ok!(TravelPoints::distribute_rewards(RuntimeOrigin::signed(1), period));
+
+		// Check reward pool emptied
+		assert_eq!(TravelPoints::reward_pool(), 0);
+
+		// Check pending rewards created (staker gets 80%, issuer gets 20%)
+		let staker_rewards = TravelPoints::pending_staker_rewards(&10);
+		assert!(staker_rewards > 0);
+	});
+}
+
+/// Test claiming rewards
+#[test]
+fn claim_rewards_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 1000));
+		assert_ok!(TravelPoints::add_to_reward_pool(RuntimeOrigin::signed(99), 10000));
+
+		// Award and spend points
+		assert_ok!(TravelPoints::award_points(
+			RuntimeOrigin::signed(2),
+			30,
+			1000,
+			crate::TravelType::Airline,
+			None
+		));
+		assert_ok!(TravelPoints::spend_points(RuntimeOrigin::signed(30), 500, 2));
+
+		let period = TravelPoints::current_period();
+		assert_ok!(TravelPoints::distribute_rewards(RuntimeOrigin::signed(1), period));
+
+		// Claim rewards
+		assert_ok!(TravelPoints::claim_rewards(RuntimeOrigin::signed(10)));
+
+		// Check pending rewards cleared
+		assert_eq!(TravelPoints::pending_staker_rewards(&10), 0);
+	});
+}
+
+/// Test claim rewards with no pending fails
+#[test]
+fn claim_rewards_none_pending_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_noop!(
+			TravelPoints::claim_rewards(RuntimeOrigin::signed(10)),
+			Error::<Test>::NoRewardsToClaim
+		);
+	});
+}
+
+// ============================================================================
+// ADVANCED STAKING TESTS - INCREASE STAKE
+// ============================================================================
+
+/// Test increasing stake
+#[test]
+fn increase_stake_works() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_ok!(TravelPoints::stake(RuntimeOrigin::signed(10), 500));
+		assert_eq!(TravelPoints::total_staked(), 500);
+
+		// Increase stake
+		assert_ok!(TravelPoints::increase_stake(RuntimeOrigin::signed(10), 300));
+
+		let stake_info = TravelPoints::get_stake_info(&10).expect("Stake should exist");
+		assert_eq!(stake_info.amount, 800);
+		assert_eq!(TravelPoints::total_staked(), 800);
+	});
+}
+
+/// Test increasing stake without existing stake fails
+#[test]
+fn increase_stake_not_staker_fails() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+
+		assert_noop!(
+			TravelPoints::increase_stake(RuntimeOrigin::signed(10), 300),
+			Error::<Test>::NotStaker
+		);
+	});
+}

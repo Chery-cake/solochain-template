@@ -43,6 +43,20 @@ pub trait WeightInfo {
 	fn stake() -> Weight;
 	fn unstake() -> Weight;
 	fn add_to_reward_pool() -> Weight;
+	// Advanced staking weight functions
+	fn request_unbond() -> Weight;
+	fn withdraw_unbonded() -> Weight;
+	fn cancel_unbonding() -> Weight;
+	fn slash_staker() -> Weight;
+	fn create_pool() -> Weight;
+	fn delegate() -> Weight;
+	fn undelegate() -> Weight;
+	fn set_pool_commission() -> Weight;
+	fn close_pool() -> Weight;
+	fn rotate_era() -> Weight;
+	fn distribute_rewards() -> Weight;
+	fn claim_rewards() -> Weight;
+	fn increase_stake() -> Weight;
 }
 
 /// Weights for `pallet_travel_points` using the Substrate node and recommended hardware.
@@ -222,6 +236,134 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+
+	// ============================================================================
+	// ADVANCED STAKING WEIGHT FUNCTIONS
+	// ============================================================================
+
+	/// Storage: `TravelPoints::Stakes` (r:1 w:1)
+	/// Storage: `TravelPoints::UnbondingRequests` (r:1 w:1)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:1)
+	fn request_unbond() -> Weight {
+		Weight::from_parts(30_000_000, 10000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+
+	/// Storage: `TravelPoints::UnbondingRequests` (r:1 w:1)
+	/// Storage: `TravelPoints::Stakes` (r:1 w:1)
+	/// Storage: `TravelPoints::StakerList` (r:1 w:1)
+	fn withdraw_unbonded() -> Weight {
+		Weight::from_parts(35_000_000, 15000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+
+	/// Storage: `TravelPoints::UnbondingRequests` (r:1 w:1)
+	/// Storage: `TravelPoints::Stakes` (r:1 w:1)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:1)
+	fn cancel_unbonding() -> Weight {
+		Weight::from_parts(28_000_000, 10000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+
+	/// Storage: `TravelPoints::Admin` (r:1 w:0)
+	/// Storage: `TravelPoints::Stakes` (r:1 w:1)
+	/// Storage: `TravelPoints::SlashRecords` (r:1 w:1)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:1)
+	/// Storage: `TravelPoints::TotalSlashed` (r:1 w:1)
+	fn slash_staker() -> Weight {
+		Weight::from_parts(40_000_000, 15000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+
+	/// Storage: `TravelPoints::NextPoolId` (r:1 w:1)
+	/// Storage: `TravelPoints::Pools` (r:0 w:1)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:1)
+	fn create_pool() -> Weight {
+		Weight::from_parts(25_000_000, 8000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+
+	/// Storage: `TravelPoints::Delegations` (r:1 w:1)
+	/// Storage: `TravelPoints::Pools` (r:1 w:1)
+	/// Storage: `TravelPoints::PoolDelegators` (r:1 w:1)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:1)
+	fn delegate() -> Weight {
+		Weight::from_parts(35_000_000, 12000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+
+	/// Storage: `TravelPoints::Delegations` (r:1 w:1)
+	/// Storage: `TravelPoints::Pools` (r:1 w:1)
+	/// Storage: `TravelPoints::PoolDelegators` (r:1 w:1)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:1)
+	fn undelegate() -> Weight {
+		Weight::from_parts(35_000_000, 12000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+
+	/// Storage: `TravelPoints::Pools` (r:1 w:1)
+	fn set_pool_commission() -> Weight {
+		Weight::from_parts(18_000_000, 4000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+
+	/// Storage: `TravelPoints::Pools` (r:1 w:1)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:1)
+	fn close_pool() -> Weight {
+		Weight::from_parts(25_000_000, 6000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
+
+	/// Storage: `TravelPoints::CurrentEra` (r:1 w:1)
+	/// Storage: `TravelPoints::LastEraBlock` (r:1 w:1)
+	/// Storage: `TravelPoints::StakerList` (r:1 w:0)
+	/// Storage: `TravelPoints::Stakes` (r:n w:n)
+	/// Storage: `TravelPoints::EraVerifiers` (r:0 w:1)
+	fn rotate_era() -> Weight {
+		Weight::from_parts(50_000_000, 40000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
+
+	/// Storage: `TravelPoints::Admin` (r:1 w:0)
+	/// Storage: `TravelPoints::RewardPool` (r:1 w:1)
+	/// Storage: `TravelPoints::PeriodTotalSpent` (r:1 w:0)
+	/// Storage: `TravelPoints::AuthorizedIssuers` (r:n w:0)
+	/// Storage: `TravelPoints::IssuerDailyRecords` (r:n w:0)
+	/// Storage: `TravelPoints::PendingIssuerRewards` (r:n w:n)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:0)
+	/// Storage: `TravelPoints::Stakes` (r:n w:0)
+	/// Storage: `TravelPoints::PendingStakerRewards` (r:n w:n)
+	fn distribute_rewards() -> Weight {
+		Weight::from_parts(100_000_000, 60000)
+			.saturating_add(T::DbWeight::get().reads(10_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
+
+	/// Storage: `TravelPoints::PendingStakerRewards` (r:1 w:1)
+	/// Storage: `TravelPoints::PendingIssuerRewards` (r:1 w:1)
+	fn claim_rewards() -> Weight {
+		Weight::from_parts(20_000_000, 5000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
+
+	/// Storage: `TravelPoints::Stakes` (r:1 w:1)
+	/// Storage: `TravelPoints::TotalStaked` (r:1 w:1)
+	fn increase_stake() -> Weight {
+		Weight::from_parts(22_000_000, 6000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -399,5 +541,87 @@ impl WeightInfo for () {
 		Weight::from_parts(8_208_000, 1501)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+
+	// ============================================================================
+	// ADVANCED STAKING WEIGHT FUNCTIONS
+	// ============================================================================
+
+	fn request_unbond() -> Weight {
+		Weight::from_parts(30_000_000, 10000)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+
+	fn withdraw_unbonded() -> Weight {
+		Weight::from_parts(35_000_000, 15000)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+
+	fn cancel_unbonding() -> Weight {
+		Weight::from_parts(28_000_000, 10000)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+
+	fn slash_staker() -> Weight {
+		Weight::from_parts(40_000_000, 15000)
+			.saturating_add(RocksDbWeight::get().reads(5_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
+	}
+
+	fn create_pool() -> Weight {
+		Weight::from_parts(25_000_000, 8000)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+
+	fn delegate() -> Weight {
+		Weight::from_parts(35_000_000, 12000)
+			.saturating_add(RocksDbWeight::get().reads(4_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
+	}
+
+	fn undelegate() -> Weight {
+		Weight::from_parts(35_000_000, 12000)
+			.saturating_add(RocksDbWeight::get().reads(4_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
+	}
+
+	fn set_pool_commission() -> Weight {
+		Weight::from_parts(18_000_000, 4000)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+
+	fn close_pool() -> Weight {
+		Weight::from_parts(25_000_000, 6000)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+
+	fn rotate_era() -> Weight {
+		Weight::from_parts(50_000_000, 40000)
+			.saturating_add(RocksDbWeight::get().reads(5_u64))
+			.saturating_add(RocksDbWeight::get().writes(5_u64))
+	}
+
+	fn distribute_rewards() -> Weight {
+		Weight::from_parts(100_000_000, 60000)
+			.saturating_add(RocksDbWeight::get().reads(10_u64))
+			.saturating_add(RocksDbWeight::get().writes(5_u64))
+	}
+
+	fn claim_rewards() -> Weight {
+		Weight::from_parts(20_000_000, 5000)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+
+	fn increase_stake() -> Weight {
+		Weight::from_parts(22_000_000, 6000)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
 }
