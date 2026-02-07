@@ -987,8 +987,6 @@ pub mod pallet {
 		TicketAlreadyRedeemed,
 		/// Ticket has expired
 		TicketExpired,
-		/// Ticket has not expired yet (for cleanup operations)
-		TicketNotExpired,
 		/// User has too many tickets
 		TooManyTickets,
 		/// Stake amount below minimum
@@ -1589,6 +1587,10 @@ pub mod pallet {
 		/// Only tickets with an expiration date that has passed will be removed.
 		/// Tickets without an expiration date are never removed by this function.
 		///
+		/// **Note**: To prevent unbounded iteration, this function processes at most
+		/// 50 tickets per call. If a user has more expired tickets, multiple calls
+		/// may be needed to clean up all of them.
+		///
 		/// ## Parameters
 		/// - `origin`: Any signed origin
 		/// - `user`: The account whose expired tickets should be cleaned
@@ -1602,11 +1604,14 @@ pub mod pallet {
 
 			let current_block = frame_system::Pallet::<T>::block_number();
 			let mut tickets_removed: u32 = 0;
+			// Maximum number of tickets to process per call to prevent unbounded iteration
+			const MAX_CLEANUP_BATCH: usize = 50;
 
-			// Get all ticket IDs for the user
+			// Get all ticket IDs for the user (limited by MaxTicketsPerUser already)
 			let user_ticket_ids = UserTickets::<T>::get(&user).to_vec();
 
-			for ticket_id in user_ticket_ids {
+			// Process at most MAX_CLEANUP_BATCH tickets
+			for ticket_id in user_ticket_ids.iter().take(MAX_CLEANUP_BATCH) {
 				if let Some(ticket) = Tickets::<T>::get(ticket_id) {
 					// Check if ticket has expired
 					if let Some(expires_at) = ticket.expires_at {
